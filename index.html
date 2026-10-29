@@ -94,7 +94,7 @@ button:focus-visible{outline:3px solid var(--ball);outline-offset:2px}
 #sheetBody{overflow-y:auto;padding:0 14px calc(16px + env(safe-area-inset-bottom,0px));min-height:0}
 .sub{font-size:13px;color:var(--muted);margin:2px 0 10px}
 .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
-.slot{border:3px dashed #b9c5dc;border-radius:14px;height:78px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--muted);position:relative}
+.slot{min-width:0;border:3px dashed #b9c5dc;border-radius:14px;height:78px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--muted);position:relative}
 .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .cell{aspect-ratio:1;max-width:100%;border-radius:12px;border:3px solid var(--line);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
 .cell img{width:82%;height:82%;object-fit:contain;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
@@ -278,7 +278,7 @@ function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  gu:1,dex:{w0:1,w1:1,w2:1,p0:1},feverK:0,buffAt:0,buffEnd:0,
  freeGun:0,freeTreat:0,raidLv:1,raidTries:3,day:'',
  st:{kills:0,draws:0,merges:0,ups:0},mis:{},
- used:[],rebTarget:0,bestS:0,slotLv:[0,0,0],gskins:[0],gskin:0,auto:false,sound:true,mul:1,last:Date.now(),gps:0}}
+ used:[],rebTarget:0,bestS:0,slotLv:[0,0,0],stars:[0,0,0],gskins:[0],gskin:0,auto:false,sound:true,mul:1,last:Date.now(),gps:0}}
 let S;
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=Object.assign(fresh(),o);if(!S.pets.length){S.pets.push({id:S.nid++,t:0,g:0});S.petEq[0]=S.pets[0].id;S.dex.p0=1}return}}catch(e){}S=fresh()}
 function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -321,10 +321,14 @@ function stats(){
  return{dmg,spd,gold,crit:Math.min(cr,100),critd:cd,ap,gp,sp}
 }
 let ST=stats();
-const slotAtk=L=>Math.pow(1.0375,L);const slotSpd=L=>1+.0075*L;const slotCost=L=>2000*Math.pow(1.5,L);
-const SL=()=>S.slotLv||(S.slotLv=[0,0,0]);
+const STAR_MAX=20;
+const STAR_COST=[100,150,200,300,400,500,700,900,1200,1500,2000,2500,3000,4000,5000,6500,8000,10000,12500,15000];
+const STAR_RATE=[100,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,12,10];
+const slotAtk=s=>Math.pow(2,s);const slotSpd=s=>1+.1*s;
+const SL=()=>{if(!S.stars){S.stars=(S.slotLv||[0,0,0]).map(L=>Math.min(STAR_MAX,Math.floor(L*Math.log2(1.0375))))}return S.stars};
 function toyDps(g,si){const d=TOYS[g.t];const L=si==null?0:SL()[si];return ST.dmg*GM[g.g]*d.dmg*(d.pel||1)*d.rate*ST.spd*slotAtk(L)*slotSpd(L)*(1+ST.crit/100*(ST.critd/100-1))}
-function slotBuy(i){if(!(i>=0&&i<3))return false;const c=slotCost(SL()[i]);if(S.gold<c)return false;S.gold-=c;SL()[i]++;S.st.ups++;return true}
+function starTry(i){const st=SL();const v=st[i];if(v>=STAR_MAX){toast('이미 ⭐20 최고 단계예요');return}const c=STAR_COST[v];if(S.gem<c){toast('다이아가 부족해요');return}S.gem-=c;S.st.ups++;
+ if(Math.random()*100<STAR_RATE[v]){st[i]++;ST=stats();happyT=1;sfx('win');toast('강화 성공! 슬롯'+(i+1)+' ⭐'+st[i]+' · 공격력 x'+slotAtk(st[i]).toLocaleString())}else{sfx('up');toast('강화 실패… 다이아만 사용됐어요 (⭐'+v+' 유지)')}save()}
 
 /* ---------- canvas ---------- */
 const cv=$('#cv'),cx=cv.getContext('2d');
@@ -409,7 +413,7 @@ cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();const x
 /* ---------- update ---------- */
 function update(dt){
  t+=dt;
- goldWinT+=dt;if(goldWinT>=5){S.gps=S.gps*.8+(goldWin/goldWinT)*.2;goldWin=0;goldWinT=0}
+ goldWinT+=dt;if(goldWinT>=5){const r=goldWin/goldWinT;S.gps=(S.gps>r*50?r:S.gps*.8+r*.2);goldWin=0;goldWinT=0}
  if(fever>0){fever-=dt;if(fever<=0){fever=0;ST=stats()}}
  barkCD=Math.max(0,barkCD-dt);barkT=Math.max(0,barkT-dt);happyT=Math.max(0,happyT-dt);guAnim=Math.max(0,guAnim-dt*2);
  if(mode==='walk'){walkT-=dt;bgY+=dt*90;if(walkT<=0)spawnWave()}
@@ -547,7 +551,6 @@ function hud(){
 function autoBuy(){if(!S.auto)return;const sv=S.mul;S.mul=1;
  for(let n=0;n<40;n++){let did=false;
   const k=['atk','spd','gold'].reduce((a,b)=>S.lv[b]<S.lv[a]?b:a);if(buy(k,true))did=true;
-  const eq=[0,1,2].filter(j=>S.gunEq[j]);if(eq.length){const j=eq.reduce((a,b)=>SL()[b]<SL()[a]?b:a);if(slotBuy(j))did=true}
   if(!did)break}
  ST=stats();S.mul=sv}
 
@@ -609,7 +612,7 @@ function timeLeft(k,cd){const r=cd-(now()-(S[k]||0));if(r<=0)return 0;const m=Ma
 
 function renderCol(kind){
  const C=COL[kind],L=C.list(),E=C.eq?C.eq():null;let h='';
- if(kind==='guns'){h+=`<div class="dexh" style="margin:0 0 6px">슬롯 강화<span>골드로 강화 · 꾹 누르면 연속</span></div><div class="slots" style="margin-bottom:6px">`+[0,1,2].map(i=>{const L=SL()[i],c=slotCost(L);return`<div class="slot" style="border-style:solid;background:#fff;height:auto;padding:6px 4px;gap:2px;color:var(--ink)"><b style="font-family:var(--f-display);font-weight:400;font-size:14px">슬롯${i+1} Lv.${L}</b><span style="font-size:11px;color:var(--muted)">공격력 +${fmt((slotAtk(L)-1)*100)}%</span><span style="font-size:11px;color:var(--muted)">공속 +${Math.round((slotSpd(L)-1)*100)}%</span><div style="display:flex;gap:3px;width:100%"><button class="btn" data-slot="${i}" ${S.gold>=c?'':'disabled'} style="padding:4px 2px;font-size:12px;touch-action:none"><img src="${src('i_coin')}" alt="" style="width:13px;height:13px">${fmt(c)}</button><button class="btn" data-slotmax="${i}" ${S.gold>=c?'':'disabled'} style="flex:0 0 auto;padding:4px 5px;font-size:11px">MAX</button></div></div>`}).join('')+`</div>`}
+ if(kind==='guns'){h+=`<div class="dexh" style="margin:0 0 6px">슬롯 강화<span>💎 다이아 · 확률 강화 · 실패해도 단계 유지</span></div><div class="slots" style="margin-bottom:6px">`+[0,1,2].map(i=>{const v=SL()[i],mx=v>=STAR_MAX,c=STAR_COST[v];return`<div class="slot" style="border-style:solid;background:#fff;height:auto;padding:6px 4px;gap:2px;color:var(--ink)"><b style="font-family:var(--f-display);font-weight:400;font-size:14px">슬롯${i+1} ⭐${v}/20</b><span style="font-size:10px;line-height:1.05;text-align:center;letter-spacing:-.5px;max-width:100%">${[0,10].map(o=>Array.from({length:10},(_,k)=>`<span style="color:${o+k<v?'#f5b301':'#c9d2e3'}">★</span>`).join('')).join('<br>')}</span><span style="font-size:11px;color:var(--muted)">공격력 x${slotAtk(v).toLocaleString()}</span><span style="font-size:11px;color:var(--muted)">공속 +${Math.round((slotSpd(v)-1)*100)}%</span>${mx?'<button class="btn alt" disabled style="padding:4px 2px;font-size:12px">최고 단계</button>':`<button class="btn blue" data-star="${i}" ${S.gem>=c?'':'disabled'} style="padding:4px 2px;font-size:12px;flex-direction:column;gap:0;line-height:1.15"><span><img src="${src('i_gem')}" alt="" style="width:12px;height:12px;vertical-align:-1px">${c.toLocaleString()}</span><span style="font-size:10px">성공 ${STAR_RATE[v]}%</span></button>`}</div>`}).join('')+`</div>`}
  if(E){h+=`<div class="slots">`+E.map((id,i)=>{const it=L.find(x=>x.id===id);return it?`<div class="slot" style="border-style:solid;border-color:${GC[it.g]};background:${GC[it.g]}22"><img src="${src(C.defs[it.t].k)}" style="width:44px;height:40px;object-fit:contain" alt=""><span style="color:var(--ink)">${GR[it.g]} ${C.defs[it.t].n}</span></div>`:`<div class="slot">빈 슬롯 ${i+1}</div>`}).join('')+`</div>`}
  else{const o={};L.forEach(it=>{const d=TREATS[it.t];o[d.s]=(o[d.s]||0)+TV[d.s][it.g]*(d.x||1)});h+=`<div class="stats">`+Object.keys(SN).map(k=>`<span>${SN[k]}<b>+${fmt(o[k]||0)}%</b></span>`).join('')+`</div>`}
  if(reveal){h+=`<div class="sub" style="text-align:center;margin:0">획득!</div><div class="reveal">`+reveal.map((it,j)=>`<div class="cell" style="${cellBg(it.g)};animation-delay:${j*.06}s">${cellHTML(C.defs[it.t].k,it.g)}</div>`).join('')+`</div>`}
@@ -675,8 +678,7 @@ $('#sheetBody').addEventListener('click',e=>{
  if(b.dataset.gbuy){const i=+b.dataset.gbuy;if(S.gem<GSKINS[i].cost){toast('다이아가 부족해요');return}S.gem-=GSKINS[i].cost;S.gskins=S.gskins||[0];S.gskins.push(i);S.gskin=i;ST=stats();guAnim=1;sfx('win');toast(GSKINS[i].n+' 획득!');renderModal();return}
  if(b.dataset.buy){const i=+b.dataset.buy;if(S.gem<SKINS[i].cost){toast('다이아가 부족해요');return}S.gem-=SKINS[i].cost;S.skins.push(i);S.skin=i;ST=stats();happyT=1.2;sfx('win');renderModal();return}
  if(act==='reb'){if(!confirmReb){confirmReb=true;renderModal();return}doRebirth();return}
- if(b.dataset.slot)return;
- if(b.dataset.slotmax){const i=+b.dataset.slotmax;let n=0;while(slotBuy(i))n++;if(n){ST=stats();sfx('up');toast('슬롯'+(i+1)+' +'+n+'레벨')}renderModal();return}
+ if(b.dataset.star){starTry(+b.dataset.star);renderModal();return}
  if(b.dataset.reb)return;
  if(b.dataset.rebmax){let n=0;while(rebBuy(b.dataset.rebmax))n++;if(n){sfx('up');toast('+'+n+'레벨 강화')}renderModal();return}
  if(act==='rebAll'){let n=0;for(;;){const ks=['atk','gold','spd'].map(k=>[k,rebCost(k,S.reb[k])*(k==='spd'?1.5:1)]).sort((a,b)=>a[1]-b[1]);let ok=false;for(const [k] of ks){if(rebBuy(k)){ok=true;n++;break}}if(!ok)break}if(n){sfx('win');toast('구슬로 '+n+'레벨 강화했어요')}renderModal();return}
@@ -696,12 +698,9 @@ let holdT=null,holdK=null;function holdStop(){clearTimeout(holdT);holdT=null;hol
 function holdStep(d){if(!holdK)return;if(rebBuy(holdK)){sfx('up');renderModal();holdT=setTimeout(()=>holdStep(Math.max(40,d*.8)),d)}else{holdStop();renderModal()}}
 document.getElementById('sheetBody').addEventListener('pointerdown',e=>{const b=e.target.closest('[data-reb]');if(!b||b.disabled)return;e.preventDefault();holdK=b.dataset.reb;if(rebBuy(holdK)){sfx('up');renderModal();holdT=setTimeout(()=>holdStep(160),380)}else holdStop()});
 ['pointerup','pointercancel','blur'].forEach(ev=>window.addEventListener(ev,holdStop));
-let slH=null;function slStop(){clearTimeout(slH);slH=null}
-function slStep(i,d){if(slotBuy(i)){sfx('up');renderModal();slH=setTimeout(()=>slStep(i,Math.max(35,d*.82)),d)}else{slStop();renderModal()}}
-document.getElementById('sheetBody').addEventListener('pointerdown',e=>{const b=e.target.closest('[data-slot]');if(!b||b.disabled)return;e.preventDefault();slStop();const i=+b.dataset.slot;if(slotBuy(i)){sfx('up');renderModal();slH=setTimeout(()=>slStep(i,150),380)}});
-['pointerup','pointercancel','blur'].forEach(ev=>window.addEventListener(ev,slStop));
+
 function rebGain(){const s=S.maxS;if(s<15)return 0;return Math.floor(Math.pow(s-12,1.9)*(1+S.rebCount*.15))}
-let lastReb=0;function doRebirth(){const g=rebGain();if(g<=0)return;best();S.rebTarget=S.bestS;lastReb=g;S.orb+=g;S.rebCount++;S.gold=0;S.W=1;S.sub=1;S.maxS=0;S.farm=false;S.lv={atk:0,spd:0,gold:0};ST=stats();resetWorld();save();openModal('rebDone');happyT=1.5;sfx('win')}
+let lastReb=0;function doRebirth(){const g=rebGain();if(g<=0)return;best();S.gps=0;S.rebTarget=S.bestS;lastReb=g;S.orb+=g;S.rebCount++;S.gold=0;S.W=1;S.sub=1;S.maxS=0;S.farm=false;S.lv={atk:0,spd:0,gold:0};ST=stats();resetWorld();save();openModal('rebDone');happyT=1.5;sfx('win')}
 function resetWorld(){foes=[];buls=[];boss=null;raid=null;mode='walk';walkT=1;hudStage()}
 
 /* ---------- missions ---------- */
@@ -726,7 +725,7 @@ function offline(){const dt=Math.min(8*3600,(now()-(S.last||now()))/1e3);if(dt<=
    const sg=eGold(st)*ST.gold*(boss?12:n);gold+=sg;S.gold+=sg;if(boss)S.gem+=5+W*2;st++;
    if(S.auto){autoBuy();ST=stats();dps=0;S.gunEq.forEach((id,i)=>{const g=S.guns.find(x=>x.id===id);if(g)dps+=toyDps(g,i)})}}
   if(st>s0){S.W=Math.floor(st/5)+1;S.sub=st%5+1;S.maxS=Math.max(S.maxS,st)}}
- const lg=S.gps*budget*.6;gold+=lg;offGold=gold;S.gold+=lg;
+ const sNow=sIdx(),nNow=12+Math.min(18,Math.floor(S.W*1.5));const rate=eGold(sNow)*ST.gold*nNow/Math.max(8,Math.min(35,eHP(sNow)*nNow/Math.max(dps,1e-9)+1.5));const lg=Math.min(S.gps||rate,rate)*budget*.6;gold+=lg;offGold=gold;S.gold+=lg;
  offFrom=st>s0?(Math.floor(s0/5)+1)+'-'+(s0%5+1):'';offTo=st>s0?S.W+'-'+S.sub:'';
  if(gold>0||offTo){resetWorld();openModal('offline')}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else{offline();daily();S.last=now()}});
@@ -740,7 +739,7 @@ function best(){S.bestS=Math.max(S.bestS||0,S.maxS||0,S.rebTarget||0);return S.b
 function boost(){return sIdx()<best()&&mode!=='raid'&&!S.farm}
 function updFree(){const b=document.querySelector('[data-act="free"]');if(!b)return;const C=COL[tab];const fl=timeLeft(C.free,C.cd);b.disabled=!!fl;b.textContent=fl?'무료 '+fl:'무료 뽑기'}
 function start(){resize();ST=stats();offline();daily();S.last=now();hudStage();hud();if(S.st.kills===0)toast('요요 출동! 복숭아·메론·참외 삑삑이 장착 완료');requestAnimationFrame(loop)}
-window.__yoyo={grade:()=>({PET_A,TV,SKINS,GSKINS,GM}),spend:()=>{for(const kind of ['guns','pets']){const C=COL[kind];while(S.gem>=C.cost*9&&C.list().length<=C.cap-10){draw(kind,10)}while(S.gem>=C.cost&&C.list().length<C.cap)draw(kind,1);autoMerge(kind);const L=C.list().slice().sort((a,b)=>kind==='guns'?toyDps(b)-toyDps(a):b.g-a.g);const E=C.eq();for(let i=0;i<3;i++)E[i]=L[i]?L[i].id:0}tab=null;$('#modal').hidden=true;ST=stats();return S.guns.map(g=>GR[g.g]).join('')},rebirth:()=>{doRebirth();const rc=rebCost;for(let i=0;i<999;i++){const ks=['atk','gold','spd'].map(k=>[k,rc(k,S.reb[k])]).sort((a,b)=>a[1]-b[1]);if(S.orb<ks[0][1])break;S.orb-=ks[0][1];S.reb[ks[0][0]]++}ST=stats();return S.reb},tick:(sec)=>{for(let i=0;i<sec*20;i++){update(.05);if(i%4===0){autoBuy();ST=stats()}}},get S(){return S},stats:()=>ST,set:o=>{Object.assign(S,o);ST=stats();hudStage()},bark};
+window.__yoyo={grade:()=>({PET_A,TV,SKINS,GSKINS,GM}),spend:()=>{for(const kind of ['guns','pets']){const C=COL[kind];while(S.gem>=C.cost*9&&C.list().length<=C.cap-10){draw(kind,10)}while(S.gem>=C.cost&&C.list().length<C.cap)draw(kind,1);autoMerge(kind);const L=C.list().slice().sort((a,b)=>kind==='guns'?toyDps(b)-toyDps(a):b.g-a.g);const E=C.eq();for(let i=0;i<3;i++)E[i]=L[i]?L[i].id:0}for(let k=0;k<200;k++){const st=SL();const i=[0,1,2].reduce((a,b)=>st[b]<st[a]?b:a);if(st[i]>=STAR_MAX||S.gem<STAR_COST[st[i]])break;starTry(i)}tab=null;$('#modal').hidden=true;ST=stats();return S.guns.map(g=>GR[g.g]).join('')+' ⭐'+SL().join('/')},rebirth:()=>{doRebirth();const rc=rebCost;for(let i=0;i<999;i++){const ks=['atk','gold','spd'].map(k=>[k,rc(k,S.reb[k])]).sort((a,b)=>a[1]-b[1]);if(S.orb<ks[0][1])break;S.orb-=ks[0][1];S.reb[ks[0][0]]++}ST=stats();return S.reb},tick:(sec)=>{for(let i=0;i<sec*20;i++){update(.05);if(i%4===0){autoBuy();ST=stats()}}},get S(){return S},stats:()=>ST,set:o=>{Object.assign(S,o);ST=stats();hudStage()},bark};
 if(hot&&hot.ready)hot.ready(start);else start();
 })();
 </script>

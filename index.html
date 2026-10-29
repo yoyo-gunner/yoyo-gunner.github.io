@@ -657,9 +657,9 @@ $('#sheetBody').addEventListener('click',e=>{
  if(act==='imp'){try{const o=JSON.parse(decodeURIComponent(escape(atob($('#saveIn').value.trim()))));if(!o||!o.lv)throw 0;S=Object.assign(fresh(),o);ST=stats();resetWorld();save();toast('불러왔어요');closeModal()}catch(err){toast('코드가 올바르지 않아요')}return}
  if(act==='reset'){if(!confirmReset){confirmReset=true;renderModal();return}S=fresh();ST=stats();resetWorld();save();closeModal();toast('새로 시작!')}
 });
-const CPN={'o6hisk':1000,'gltmfo':10000,'1jb8r0l':3000};
+const CPN={'o6hisk':{g:1000},'gltmfo':{g:10000},'1jb8r0l':{g:3000},'1jdmf4v':{g:500},'o5ifrp':{g:5000},'yjlnmn':{g:2000},'7rgok1':{g:3000,o:100},'1cc1znz':{o:500},'3tkube':{w:[0,4]},'3hv7ts':{w:[1,4]},'19pb97s':{w:[2,4]},'6j3atj':{w:[15,5]}};
 function hc(s){let h=5381;for(const c of s)h=(Math.imul(h,33)^c.codePointAt(0))>>>0;return h.toString(36)}
-function useCoupon(v){const c=(v||'').replace(/\s+/g,'').toUpperCase();if(!c){toast('쿠폰 코드를 입력하세요');return}const h=hc(c);if(!(h in CPN)){toast('없는 쿠폰 코드예요');return}S.used=S.used||[];if(S.used.includes(h)){toast('이미 사용한 쿠폰이에요');return}S.used.push(h);S.gem+=CPN[h];happyT=1.4;sfx('win');save();toast('쿠폰 사용! 💎 +'+CPN[h].toLocaleString());const i=$('#coupon');if(i)i.value='';hud()}
+function useCoupon(v){const c=(v||'').replace(/\s+/g,'').toUpperCase();if(!c){toast('쿠폰 코드를 입력하세요');return}const h=hc(c);if(!(h in CPN)){toast('없는 쿠폰 코드예요');return}S.used=S.used||[];if(S.used.includes(h)){toast('이미 사용한 쿠폰이에요');return}S.used.push(h);const R=CPN[h];const msg=[];if(R.g){S.gem+=R.g;msg.push('💎 +'+R.g.toLocaleString())}if(R.o){S.orb+=R.o;msg.push('구슬 +'+R.o.toLocaleString())}if(R.w){S.guns.push({id:S.nid++,t:R.w[0],g:R.w[1]});S.dex['w'+R.w[0]]=1;msg.push(GR[R.w[1]]+' '+TOYS[R.w[0]].n)}happyT=1.4;sfx('win');ST=stats();save();toast('쿠폰 사용! '+msg.join(' · '));const i=$('#coupon');if(i)i.value='';hud()}
 function rebGain(){const s=S.maxS;if(s<15)return 0;return Math.floor(Math.pow(s-12,1.9)*(1+S.rebCount*.15))}
 function doRebirth(){const g=rebGain();if(g<=0)return;S.orb+=g;S.rebCount++;S.gold=0;S.W=1;S.sub=1;S.maxS=0;S.farm=false;S.lv={atk:0,spd:0,gold:0};ST=stats();resetWorld();save();closeModal();toast('환생! 구슬 +'+fmt(g));happyT=1.5;sfx('win')}
 function resetWorld(){foes=[];buls=[];boss=null;raid=null;mode='walk';walkT=1;hudStage()}

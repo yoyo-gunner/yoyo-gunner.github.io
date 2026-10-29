@@ -280,8 +280,8 @@ function fmt(n){if(!isFinite(n))return '∞';if(n<1000)return n<10&&n%1?n.toFixe
 
 /* ---------- formulas ---------- */
 const sIdx=()=> (S.W-1)*5+(S.sub-1);
-const eHP=s=>10*Math.pow(1.2,s)*(1+s*.04);
-const eGold=s=>2.5*Math.pow(1.165,s);
+const eHP=s=>12*Math.pow(1.205,s)*(1+s*.04);
+const eGold=s=>1.7*Math.pow(1.165,s);
 const COST={atk:l=>6*Math.pow(1.14,l),spd:l=>14*Math.pow(1.22,l),gold:l=>10*Math.pow(1.15,l)};
 const rebCost=(k,l)=>Math.ceil({atk:1,spd:2,gold:1}[k]*Math.pow(1.17,l)*(1+l*.08));
 const guCost=l=>Math.round(40+l*25+Math.pow(l,1.6)*4);
@@ -318,7 +318,7 @@ window.addEventListener('resize',resize);
 /* ---------- world state ---------- */
 let foes=[],buls=[],fx=[],txt=[],coins=[],toysS=[{cd:0},{cd:.3},{cd:.6}],petsS=[{cd:0},{cd:.4},{cd:.8}];
 let mode='walk',walkT=1,bgY=0,waveTotal=1,waveKilled=0,boss=null,bossT=0,raid=null,t=0,shake=0,goldWin=0,goldWinT=0;
-let yX=180,yT=180,yRe=0,yDir=1,yMov=0,gX=90,rush=false,barkCD=0,barkT=0,happyT=0,guT=6,guAnim=0,bubbles=[];
+let waveT=35,yX=180,yT=180,yRe=0,yDir=1,yMov=0,gX=90,rush=false,barkCD=0,barkT=0,happyT=0,guT=6,guAnim=0,bubbles=[];
 const BARK_CD=20;
 const YY=()=>H-118;
 const TOFF=[[28,-2],[-28,-2],[0,-48]];
@@ -328,13 +328,13 @@ function theme(){return THEMES[Math.floor((S.W-1)/3)%3]}
 function spawnWave(){
  const s=sIdx(),th=theme();foes=[];waveKilled=0;
  if(S.sub===5&&!S.farm){
-  rush=false;const b=BOSSES[(S.W-1)%4];const hp=eHP(s)*28;
-  boss={k:b.k,n:b.n,x:W/2,y:-90,ty:170,hp,max:hp,r:70,hitT:0,slowT:0,stunT:0,boss:1};foes.push(boss);bossT=30;waveTotal=1;mode='boss';return}
- const n=8+Math.min(12,S.W),cols=5;
+  rush=false;const b=BOSSES[(S.W-1)%4];const hp=eHP(s)*34;
+  boss={k:b.k,n:b.n,x:W/2,y:-90,ty:170,hp,max:hp,r:70,hitT:0,slowT:0,stunT:0,boss:1};foes.push(boss);bossT=20;waveTotal=1;mode='boss';return}
+ const n=12+Math.min(18,Math.floor(S.W*1.5)),cols=6;
  let dps=0;S.gunEq.forEach(id=>{const g=S.guns.find(x=>x.id===id);if(g)dps+=toyDps(g)});rush=dps*1.5>eHP(s)*n;
  for(let i=0;i<n;i++){const row=Math.floor(i/cols),col=i%cols;const k=th.e[(i+S.W+row)%th.e.length];const hp=eHP(s)*(k==='e_crate'?1.6:1);
-  const ty=YY()-160-row*54;foes.push({k,x:92+col*44+(row%2?12:-4)+Math.random()*8,y:rush?ty-90-row*10:-40-row*58-Math.random()*20,ty,hp,max:hp,r:26,hitT:0,slowT:0,stunT:0,wob:Math.random()*6})}
- waveTotal=n;mode='fight'}
+  const ty=YY()-140-row*50;foes.push({k,x:86+col*38+(row%2?10:-4)+Math.random()*6,y:rush?ty-90-row*10:-40-row*54-Math.random()*20,ty,hp,max:hp,r:23,hitT:0,slowT:0,stunT:0,wob:Math.random()*6})}
+ waveTotal=n;mode='fight';waveT=35}
 function startRaid(){
  const L=S.raidLv;const hp=eHP(8+L*5)*45;const b=BOSSES[(L+1)%4];
  raid={dmg:0,t:30};foes=[];buls=[];rush=false;
@@ -401,7 +401,7 @@ function update(dt){
  gX+=(Math.max(46,yX-86)-gX)*Math.min(1,dt*2.5);
  guT-=dt;if(guT<=0){guT=12;if(foes.length)guRainNow()}
  for(const f of foes){if(f.hp<=0)continue;f.stunT-=dt;f.slowT-=dt;f.hitT-=dt;if(f.stunT>0)continue;const sl=f.slowT>0?.45:1;
-  if(f.y<f.ty)f.y=Math.min(f.ty,f.y+(f.boss?60:34)*sl*dt)}
+  if(f.y<f.ty)f.y=Math.min(f.ty,f.y+(f.boss?60:40)*sl*dt)}
  foes=foes.filter(f=>f.hp>0);
  const tgs=nearest(3);
  if(tgs.length){
@@ -428,6 +428,7 @@ function update(dt){
  if(mode==='boss'){bossT-=dt;if(boss.hp<=0)bossClear();else if(bossT<=0)bossFail()}
  else if(mode==='raid'){raid.t-=dt;if(boss.hp<=0)raidEnd(true);else if(raid.t<=0)raidEnd(false)}
  else if(mode==='fight'&&foes.length===0)waveClear();
+ else if(mode==='fight'){waveT-=dt;if(waveT<=0)waveFail()}
 }
 function waveClear(){if(!S.farm&&S.sub<5)S.sub++;S.maxS=Math.max(S.maxS,sIdx());mode='walk';walkT=rush?.35:1.1;hudStage();save()}
 function bossClear(){
@@ -435,6 +436,7 @@ function bossClear(){
  S.W++;S.sub=1;S.maxS=Math.max(S.maxS,sIdx());boss=null;mode='walk';walkT=1.6;
  if((S.W-1)%3===0)toast(theme().n+' 지역 도착!');
  hudStage();save();sfx('win')}
+function waveFail(){for(const f of foes)for(let i=0;i<3;i++)fx.push({x:f.x,y:f.y,vx:(Math.random()-.5)*80,vy:-160,t:0,l:.4,c:'#fff',r:5});foes=[];mode='walk';walkT=1.2;toast('시간 초과! 적이 도망갔어요 · 다시 도전');hudStage()}
 function bossFail(){foes=[];boss=null;S.farm=true;S.sub=4;mode='walk';walkT=1;toast('시간 초과! 강해져서 다시 도전하세요');hudStage();save()}
 function raidEnd(win){
  const r=raid;raid=null;foes=[];boss=null;buls=[];
@@ -454,7 +456,7 @@ function render(){
  if(bg){const bh=W*bg.naturalHeight/bg.naturalWidth;const y=(bgY%bh);for(let yy=y-bh;yy<H;yy+=bh)cx.drawImage(bg,0,yy,W,bh+1)}else{cx.fillStyle=th.c;cx.fillRect(0,0,W,H)}
  if(fever>0){cx.save();cx.globalAlpha=.12+.06*Math.sin(t*8);cx.fillStyle='#ffd23a';cx.fillRect(0,0,W,H);cx.restore()}
  for(const f of foes.slice().sort((a,b)=>a.y-b.y)){
-  const sz=f.boss?170:56,bob=f.stunT>0?0:f.boss?Math.sin(t*2)*4:Math.sin(t*6+(f.wob||0))*2;
+  const sz=f.boss?170:50,bob=f.stunT>0?0:f.boss?Math.sin(t*2)*4:Math.sin(t*6+(f.wob||0))*2;
   shadow(f.x,f.y+sz*.42,sz*.34);
   const sq=f.hitT>0?1.12:1;const wob=f.stunT>0?Math.sin(t*20)*.12:0;drawImg(f.k,f.x,f.y+bob,sz*sq,sz/sq,wob);
   if(f.hitT>0){cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.35;drawImg(f.k,f.x,f.y+bob,sz*sq,sz/sq,wob);cx.restore()}
@@ -490,6 +492,7 @@ function render(){
  cx.save();const fw=150,fxp=(W-fw)/2,fy=H-16;cx.fillStyle='rgba(15,22,40,.7)';cx.beginPath();cx.roundRect(fxp-4,fy-8,fw+8,16,8);cx.fill();
  cx.fillStyle=fever>0?'#ffd23a':'#ff9d3c';const fr=fever>0?fever/10:S.feverK/100;cx.beginPath();cx.roundRect(fxp,fy-4,fw*fr,8,4);cx.fill();
  cx.font='10px Jua, sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText(fever>0?'간식 피버!':'피버 '+S.feverK+'/100',W/2,fy-11);cx.restore();
+ if(mode==='fight'){cx.save();const tw=120,tx=(W-tw)/2,tyy=10;cx.fillStyle='rgba(15,22,40,.75)';cx.beginPath();cx.roundRect(tx-6,tyy,tw+12,22,11);cx.fill();cx.fillStyle=waveT<10?'#ff5d6c':'#d4f03c';cx.beginPath();cx.roundRect(tx,tyy+15,tw*Math.max(0,waveT/35),4,2);cx.fill();cx.font='12px Jua, sans-serif';cx.textAlign='center';cx.fillStyle=waveT<10?'#ff9aa4':'#fff';cx.fillText('남은 시간 '+Math.ceil(Math.max(0,waveT))+'초',W/2,tyy+12);cx.restore()}
  if(boss&&(mode==='boss'||mode==='raid')){const tl=mode==='raid'?raid.t:bossT;
   cx.save();cx.fillStyle='rgba(15,22,40,.85)';cx.beginPath();cx.roundRect(66,58,W-132,46,10);cx.fill();
   cx.font='14px Jua, sans-serif';cx.textAlign='left';cx.fillStyle='#fff';cx.fillText(boss.n,76,77);cx.textAlign='right';cx.fillStyle=tl<8?'#ff5d6c':'#d4f03c';cx.fillText(Math.ceil(Math.max(0,tl))+'초',W-76,77);

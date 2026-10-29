@@ -297,8 +297,9 @@ const eGold=s=>1.7*Math.pow(1.165,s);
 const COST={atk:l=>6*Math.pow(1.14,l),spd:l=>14*Math.pow(1.22,l),gold:l=>10*Math.pow(1.15,l)};
 const rebCost=(k,l)=>Math.ceil({atk:1,spd:2,gold:1}[k]*Math.pow(1.17,l)*(1+l*.08));
 const guCost=l=>Math.round(40+l*25+Math.pow(l,1.6)*4);
-const guGold=l=>20*l;
-const guRain=l=>3+l*1.5;
+const guGoldM=l=>Math.pow(1.12,l-1)*(1+.2*l);
+const guAtkM=l=>Math.pow(1.08,l-1)*(1+.1*(l-1));
+const guRain=l=>5*Math.pow(1.18,l-1)*(1+.3*l);
 const now=()=>Date.now();
 const buffOn=()=>now()<S.buffEnd;
 let fever=0;
@@ -313,9 +314,9 @@ function stats(){
  const R=S.reb,L=S.lv;
  const base=4*(1+.1*L.atk)*Math.pow(1.06,L.atk);
  const bf=buffOn()?2:1,fv=fever>0;
- const dmg=base*pA*(1+tA/100)*(1+sk/100)*(1+D.atk/100)*(1+.3*R.atk)*Math.pow(1.1,R.atk)*bf;
+ const dmg=base*guAtkM(S.gu)*pA*(1+tA/100)*(1+sk/100)*(1+D.atk/100)*(1+.3*R.atk)*Math.pow(1.1,R.atk)*bf;
  const spd=(1+.03*L.spd)*(1+sp/100)*(1+.025*R.spd)*(fv?2:1);
- const gold=(1+.1*L.gold)*Math.pow(1.015,L.gold)*pG*(1+tG/100)*(1+(guGold(S.gu)+gsb.g)/100)*(1+D.gold/100)*(1+.35*R.gold)*Math.pow(1.06,R.gold)*bf*(fv?3:1);
+ const gold=(1+.1*L.gold)*Math.pow(1.015,L.gold)*pG*(1+tG/100)*guGoldM(S.gu)*(1+gsb.g/100)*(1+D.gold/100)*(1+.35*R.gold)*Math.pow(1.06,R.gold)*bf*(fv?3:1);
  const ap=(pA*(1+tA/100)*(1+sk/100)*(1+D.atk/100)-1)*100,gp=(pG*(1+tG/100)-1)*100;
  return{dmg,spd,gold,crit:Math.min(cr,100),critd:cd,ap,gp,sp}
 }
@@ -415,7 +416,7 @@ function update(dt){
  yRe-=dt;if(yRe<=0){yT=128+Math.random()*104;yRe=1.4+Math.random()*2.4}
  {const dx=yT-yX;yMov=Math.abs(dx)>1.5?1:0;if(yMov){yDir=Math.sign(dx);yX+=yDir*Math.min(Math.abs(dx),72*dt)}}
  gX+=(Math.max(46,yX-86)-gX)*Math.min(1,dt*2.5);
- guT-=dt;if(guT<=0){guT=12;if(foes.length)guRainNow()}
+ guT-=dt;if(guT<=0){guT=10;if(foes.length)guRainNow()}
  for(const f of foes){if(f.hp<=0)continue;f.stunT-=dt;f.slowT-=dt;f.hitT-=dt;if(f.stunT>0)continue;const sl=f.slowT>0?.45:1;
   if(f.y<f.ty)f.y=Math.min(f.ty,f.y+(f.boss?60:40)*sl*dt)}
  foes=foes.filter(f=>f.hp>0);
@@ -619,7 +620,7 @@ function renderModal(){
  if(!tab)return;const B=$('#sheetBody');let h='',title='';
  if(COL[tab]){title=COL[tab].title;h=renderCol(tab)}
  else if(tab==='gureumi'){title='구름이';const c=guCost(S.gu);
-  h=`<div class="detail"><img src="${src('gu_sit')}" alt="" style="width:80px;height:80px"><div style="flex:1;min-width:0"><div class="dn">구름이 Lv.${S.gu}</div><div class="ds">요요 옆에서 구름을 타고 응원하는 언니 강아지예요.<br>· 골드 +${guGold(S.gu)}% (다음 +${guGold(S.gu+1)}%)<br>· 12초마다 구름 비: 모든 적에게 공격력 x${guRain(S.gu).toFixed(1)} (다음 x${guRain(S.gu+1).toFixed(1)})<br>· 응원 버튼: 3분 동안 공격력·골드 2배 (15분마다)</div></div></div>
+  h=`<div class="detail"><img src="${src('gu_sit')}" alt="" style="width:80px;height:80px"><div style="flex:1;min-width:0"><div class="dn">구름이 Lv.${S.gu}</div><div class="ds">요요 옆에서 구름을 타고 응원하는 언니 강아지예요.<br>· 골드 x${fmt(guGoldM(S.gu))}배 (다음 x${fmt(guGoldM(S.gu+1))})<br>· 공격력 x${fmt(guAtkM(S.gu))}배 (다음 x${fmt(guAtkM(S.gu+1))})<br>· 10초마다 구름 비: 모든 적에게 공격력 x${fmt(guRain(S.gu))} (다음 x${fmt(guRain(S.gu+1))})<br>· 응원 버튼: 3분 동안 공격력·골드 2배 (15분마다)</div></div></div>
   <div class="bar"><button class="btn blue" data-act="gu" ${S.gem>=c?'':'disabled'}><img src="${src('i_gem')}" alt="">${c} · 간식 주고 레벨업</button></div>
   <div class="dexh" style="margin-top:8px">구름이 스킨<span>보유할수록 골드·구름 비 보너스가 쌓여요</span></div><div class="skins">`+GSKINS.map((g,i)=>{const own=(S.gskins||[0]).includes(i);const k=i===0?'gu_cloud':'gs'+i;return`<div class="skin${S.gskin===i?' on':''}"><img src="${src(k)}" alt=""><b>${g.n}</b><span>${i?'골드 +'+g.gold+'% · 비 +'+g.rain+'%':'기본'}</span>${own?(S.gskin===i?'<button class="btn alt" disabled>입는 중</button>':`<button class="btn" data-gskin="${i}">입히기</button>`):`<button class="btn blue" data-gbuy="${i}"><img src="${src('i_gem')}" alt="">${g.cost.toLocaleString()}</button>`}</div>`}).join('')+`</div>`}
  else if(tab==='skins'){title='요요 스킨';h=`<p class="sub">보유한 스킨마다 공격력 보너스가 쌓여요. 하나를 골라 입혀요.</p><div class="skins">`+SKINS.map((s,i)=>{const own=S.skins.includes(i);return`<div class="skin${S.skin===i?' on':''}"><img src="${src('y'+i)}" alt=""><b>${s.n}</b><span>공격력 +${s.atk}%</span>${own?(S.skin===i?'<button class="btn alt" disabled>입는 중</button>':`<button class="btn" data-skin="${i}">입히기</button>`):`<button class="btn blue" data-buy="${i}"><img src="${src('i_gem')}" alt="">${s.cost.toLocaleString()}</button>`}</div>`}).join('')+`</div>`}

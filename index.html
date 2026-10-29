@@ -248,6 +248,7 @@ const TOYS=[
  {k:'w_burger',n:'햄버거 삑삑이',rate:.7,dmg:1.8,sp:470,splash:52,w:3.5,d:'큰 폭발'},
  {k:'w_tennis',n:'테니스공 삑삑이',rate:1.4,dmg:1,sp:640,bounce:3,w:6,d:'적 사이를 3번 튕김'},
  {k:'w_unicorn',n:'무지개 유니콘',rate:1.2,dmg:3,sp:600,pierce:3,splash:40,bounce:1,w:1,d:'전설! 관통·폭발·튕김'}];
+const TCOL=["#ff9cc0", "#b8e07a", "#ffd84a", "#ff4d5e", "#ffe14d", "#ff5a6e", "#a66bff", "#ffcf33", "#ff9a3c", "#ffe066", "#5fc95a", "#d9893b", "#ff8fc8", "#ffa64d", "#d4f03c", "rainbow"];
 const PETS=[
  {k:'p_chick',n:'삐약이',a:'gold',b:'spd'},{k:'p_bunny',n:'토토',a:'atk',b:'spd'},
  {k:'p_hedgehog',n:'고슴',a:'atk',b:'crit'},{k:'p_sprout',n:'새싹이',a:'gold',b:'crit'},
@@ -371,8 +372,8 @@ function fire(i,g,tg){
   const aa=a+(pel>1?(p/(pel-1)-.5)*d.spread:0)+(d.jit?(Math.random()-.5)*d.jit:0);
   const crit=Math.random()*100<ST.crit;
   const dm=ST.dmg*GM[g.g]*d.dmg*over*slotAtk(L)*(crit?ST.critd/100:1);
-  buls.push({x:ox,y:oy,vx:Math.cos(aa)*d.sp,vy:Math.sin(aa)*d.sp,dm,crit,k:d.k,sz:pel>1?15:20,pr:d.pierce||1,hit:[],splash:d.splash||0,slow:d.slow||0,bounce:d.bounce||0,life:1.8,g:g.g,spin:(Math.random()-.5)*16})}
- toysS[i].kick=1;sfx('squeak');
+  buls.push({x:ox,y:oy,vx:Math.cos(aa)*d.sp,vy:Math.sin(aa)*d.sp,dm,crit,col:TCOL[g.t],k:d.k,sz:pel>1?15:20,pr:d.pierce||1,hit:[],splash:d.splash||0,slow:d.slow||0,bounce:d.bounce||0,life:1.8,g:g.g,spin:(Math.random()-.5)*16})}
+ toysS[i].kick=1;sfx('squeak');if(fx.length<300)fx.push({flash:1,x:ox+Math.cos(a)*14,y:oy+Math.sin(a)*14,t:0,l:.09,c:hexOf(rcol(TCOL[g.t]))});
  if(Math.random()<.05&&bubbles.length<3)bubbles.push({x:ox+(Math.random()-.5)*20,y:oy-26,t:0})}
 function petFire(i,p,tg){
  const ox=yX+POFF[i][0],oy=YY()+POFF[i][1];const a=Math.atan2(tg.y-oy,tg.x-ox);
@@ -382,13 +383,14 @@ function petFire(i,p,tg){
 function hurt(f,dm,crit,bx,by){
  if(f.hp<=0)return;f.hp-=dm;f.hitT=.12;
  if(raid)raid.dmg+=dm;
- if(txt.length<46)txt.push({x:(bx||f.x)+(Math.random()-.5)*24,y:(by||f.y)-10,v:fmt(dm),c:crit,t:0});
+ if(txt.length<80)txt.push({x:(bx||f.x)+(Math.random()-.5)*30,y:(by||f.y)-10+(Math.random()-.5)*14,v:fmt(dm),c:crit,t:0});
  if(f.hp<=0)kill(f)}
 function kill(f){
+ puff(f.x,f.y,'#ffffff',f.boss?110:42,.55,f.boss?6:2);puff(f.x,f.y,['#5fe0ff','#ff6b6b','#b77dff','#ffd23a'][Math.random()*4|0],f.boss?90:34,.5,f.boss?4:1);
  for(let i=0;i<(f.boss?26:8);i++)fx.push({x:f.x,y:f.y,vx:(Math.random()-.5)*260,vy:(Math.random()-.5)*260-60,t:0,l:.5+Math.random()*.4,c:['#fff','#ffd23a','#ff9d3c','#d4f03c'][i%4],r:3+Math.random()*4});
  if(mode==='raid')return;
  waveKilled++;S.st.kills++;
- const g=eGold(sIdx())*ST.gold*(f.boss?12:1);S.gold+=g;goldWin+=g;
+ const g=eGold(sIdx())*ST.gold*(f.boss?12:1);S.gold+=g;goldWin+=g;if(txt.length<90&&(f.boss||Math.random()<.5))txt.push({x:f.x+(Math.random()-.5)*20,y:f.y-24,v:'+'+fmt(g),gold:1,c:false,t:0});
  for(let i=0;i<(f.boss?8:2);i++)coins.push({x:f.x,y:f.y,vx:(Math.random()-.5)*120,vy:-120-Math.random()*80,t:0});
  if(fever<=0){S.feverK++;if(S.feverK>=100){S.feverK=0;fever=10;ST=stats();toast('간식 피버! 10초 동안 골드 3배 · 공속 2배');happyT=1.2;sfx('win')}}
  if(f.boss)shake=.4}
@@ -434,14 +436,14 @@ function update(dt){
   if(b.x<-30||b.x>W+30||b.y<-50||b.y>H+20)b.life=0;if(b.life<=0)continue;
   for(const f of foes){if(f.hp<=0||b.hit.includes(f))continue;const dx=f.x-b.x,dy=f.y-b.y,r=f.r+b.sz*.35;
    if(dx*dx+dy*dy<r*r){b.hit.push(f);
-    if(b.splash){fx.push({ring:1,x:b.x,y:b.y,t:0,l:.35,r:b.splash,c:'#ff9d3c'});for(const o of foes){if(o.hp>0&&Math.hypot(o.x-b.x,o.y-b.y)<b.splash+o.r*.5)hurt(o,b.dm*(o===f?1:.6),b.crit,o.x,o.y)}}
-    else hurt(f,b.dm,b.crit,b.x,b.y);
+    if(b.splash){fx.push({ring:1,x:b.x,y:b.y,t:0,l:.35,r:b.splash,c:'#ff9d3c'});puff(b.x,b.y,'#ff7a2e',b.splash*.9,.5,2);puff(b.x,b.y,'#ffd23a',b.splash*.6,.35,1);puff(b.x,b.y,'#d63b2b',b.splash*.8,.6,1);sparks(b.x,b.y,'#ffd23a',8,260);shake=Math.max(shake,.1);for(const o of foes){if(o.hp>0&&Math.hypot(o.x-b.x,o.y-b.y)<b.splash+o.r*.5)hurt(o,b.dm*(o===f?1:.6),b.crit,o.x,o.y)}}
+    else{hurt(f,b.dm,b.crit,b.x,b.y);if(b.col&&Math.random()<.55)puff(b.x,b.y,b.col,b.crit?34:22,.45,b.crit?2:1);if(b.crit){sparks(b.x,b.y,'#fff3a0',5);shake=Math.max(shake,.06)}}
     if(b.slow)f.slowT=b.slow;
     if(b.bounce>0){const n=foes.filter(o=>o.hp>0&&!b.hit.includes(o)).sort((p,q)=>Math.hypot(p.x-b.x,p.y-b.y)-Math.hypot(q.x-b.x,q.y-b.y))[0];
      if(n){b.bounce--;const a=Math.atan2(n.y-b.y,n.x-b.x),sp=Math.hypot(b.vx,b.vy);b.vx=Math.cos(a)*sp;b.vy=Math.sin(a)*sp;b.life=1.2;break}}
     if(--b.pr<=0){b.life=0;break}}}}
  buls=buls.filter(b=>b.life>0);if(buls.length>500)buls.splice(0,buls.length-500);
- fx.forEach(p=>{p.t+=dt;if(!p.ring){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=500*dt}});fx=fx.filter(p=>p.t<p.l);
+ fx.forEach(p=>{p.t+=dt;if(p.puff){p.x+=p.vx*dt;p.y+=p.vy*dt}else if(!p.ring&&!p.flash){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=500*dt}});fx=fx.filter(p=>p.t<p.l);
  txt.forEach(p=>p.t+=dt);txt=txt.filter(p=>p.t<(p.big?1.1:.8));
  bubbles.forEach(b=>b.t+=dt);bubbles=bubbles.filter(b=>b.t<.7);
  coins.forEach(c=>{c.t+=dt;if(c.t<.35){c.x+=c.vx*dt;c.y+=c.vy*dt;c.vy+=300*dt}else{c.x+=(W-40-c.x)*dt*7;c.y+=(-10-c.y)*dt*7}});coins=coins.filter(c=>c.t<1.1);
@@ -466,6 +468,11 @@ function raidEnd(win){
  mode='walk';walkT=1;hudStage();save()}
 
 /* ---------- render ---------- */
+const PUFF={};function puffImg(c){if(PUFF[c])return PUFF[c];const n=document.createElement('canvas');n.width=n.height=64;const g=n.getContext('2d');const gr=g.createRadialGradient(32,30,4,32,32,32);gr.addColorStop(0,'#ffffff');gr.addColorStop(.35,c);gr.addColorStop(1,c+'00');g.fillStyle=gr;g.beginPath();g.arc(32,32,32,0,7);g.fill();return PUFF[c]=n}
+function rcol(c){return c==='rainbow'?'hsl('+(((t*240+Math.random()*120)%360)/30|0)*30+',90%,65%)':c}
+const HEX={};function hexOf(c){if(c[0]==='#')return c;if(HEX[c])return HEX[c];const n=document.createElement('canvas').getContext('2d');n.fillStyle=c;return HEX[c]=n.fillStyle}
+function puff(x,y,c,r,l,n){if(fx.length>320)return;c=hexOf(rcol(c));for(let i=0;i<(n||1);i++)fx.push({puff:1,x:x+(Math.random()-.5)*r*.6,y:y+(Math.random()-.5)*r*.6,vx:(Math.random()-.5)*40,vy:-20-Math.random()*30,r0:r*.35,r1:r*(1+Math.random()*.4),t:0,l:l*(0.8+Math.random()*.4),c})}
+function sparks(x,y,c,n,sp){if(fx.length>340)return;for(let i=0;i<n;i++){const a=Math.random()*7,v=(sp||220)*(.4+Math.random()*.8);fx.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-40,t:0,l:.35+Math.random()*.25,c,r:2+Math.random()*2.5})}}
 function drawImg(k,x,y,w,h,rot,sx,sy){const i=im(k);cx.save();cx.translate(x,y);if(rot)cx.rotate(rot);if(sx||sy)cx.scale(sx||1,sy||1);
  if(i){const r=i.naturalWidth/i.naturalHeight;let ww=w,hh=h;if(!hh)hh=ww/r;else if(r>w/h)hh=ww/r;else ww=hh*r;cx.drawImage(i,-ww/2,-hh/2,ww,hh)}
  else{cx.fillStyle='#ccc';cx.beginPath();cx.arc(0,0,(w||40)/2.4,0,7);cx.fill()}cx.restore()}
@@ -501,13 +508,14 @@ function render(){
  S.gunEq.forEach((id,i)=>{const g=S.guns.find(x=>x.id===id);if(!g)return;const G=toysS[i];const ox=yx+TOFF[i][0],oy=yy+TOFF[i][1]+yb+(i===2?Math.sin(t*3)*3:0);
   const k=G.kick||0;if(g.g>=4){cx.save();cx.globalAlpha=.35+.15*Math.sin(t*5);cx.fillStyle=GC[g.g];cx.beginPath();cx.arc(ox,oy,18,0,7);cx.fill();cx.restore()}
   drawImg(TOYS[g.t].k,ox,oy+k*3,i===2?28:32,i===2?28:32,0,1+k*.22,1-k*.25)});
+ {const tg=nearest(1)[0];if(tg){cx.save();cx.translate(tg.x,tg.y);cx.rotate(t*2);const R=(tg.r||24)+8+Math.sin(t*8)*2;cx.strokeStyle='#ffffff';cx.lineWidth=3;cx.shadowColor='#000';cx.shadowBlur=3;cx.beginPath();cx.arc(0,0,R,0,7);cx.stroke();for(let q=0;q<4;q++){cx.rotate(Math.PI/2);cx.beginPath();cx.moveTo(R-6,0);cx.lineTo(R+7,0);cx.stroke()}cx.restore()}}
  // bullets = flying toys
- for(const b of buls){if(b.k){drawImg(b.k,b.x,b.y,b.sz,b.sz,t*b.spin)}else{cx.fillStyle=b.col;cx.beginPath();cx.arc(b.x,b.y,b.sz*.6,0,7);cx.fill()}}
- for(const p of fx){const k=p.t/p.l;cx.save();cx.globalAlpha=1-k;if(p.ring){cx.strokeStyle=p.c;cx.lineWidth=6*(1-k)+1;cx.beginPath();cx.arc(p.x,p.y,p.r*(.4+k*.8),0,7);cx.stroke()}else{cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r*(1-k*.5),0,7);cx.fill()}cx.restore()}
+ for(const b of buls){if(b.k){if(b.col){cx.save();cx.globalAlpha=.45;const tc=hexOf(rcol(b.col));cx.drawImage(puffImg(tc),b.x-b.vx*.03-9,b.y-b.vy*.03-9,18,18);cx.restore()}drawImg(b.k,b.x,b.y,b.sz,b.sz,t*b.spin)}else{cx.fillStyle=b.col;cx.beginPath();cx.arc(b.x,b.y,b.sz*.6,0,7);cx.fill()}}
+ for(const p of fx){const k=p.t/p.l;cx.save();if(p.puff){const r=p.r0+(p.r1-p.r0)*(1-Math.pow(1-k,3));cx.globalAlpha=(1-k)*.85;cx.drawImage(puffImg(p.c),p.x-r,p.y-r,r*2,r*2);cx.restore();continue}if(p.flash){cx.globalAlpha=1-k;cx.globalCompositeOperation='lighter';cx.drawImage(puffImg(p.c),p.x-14,p.y-14,28,28);cx.restore();continue}cx.globalAlpha=1-k;if(p.ring){cx.strokeStyle=p.c;cx.lineWidth=6*(1-k)+1;cx.beginPath();cx.arc(p.x,p.y,p.r*(.4+k*.8),0,7);cx.stroke()}else{cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r*(1-k*.5),0,7);cx.fill()}cx.restore()}
  const ci=im('i_coin');for(const c of coins){if(ci)cx.drawImage(ci,c.x-8,c.y-8,16,16)}
  cx.textAlign='center';cx.lineJoin='round';
  for(const b of bubbles){const k=b.t/.7;cx.save();cx.globalAlpha=1-k*k;cx.font='15px Jua, sans-serif';const y=b.y-k*18;cx.fillStyle='#fff';cx.strokeStyle='#d14a7a';cx.lineWidth=2;cx.beginPath();cx.roundRect(b.x-18,y-15,36,20,9);cx.fill();cx.stroke();cx.fillStyle='#d14a7a';cx.fillText('삑!',b.x,y);cx.restore()}
- for(const p of txt){const L=p.big?1.1:.8,k=p.t/L;cx.save();cx.globalAlpha=k<.7?1:1-(k-.7)/.3;const s=p.big?44:p.c?22:15;cx.font=s+'px Jua, sans-serif';cx.lineWidth=p.big?7:4;cx.strokeStyle=p.blue?'#123a66':'#3a1206';const y=p.y-k*(p.big?20:34);cx.strokeText(p.v,p.x,y);cx.fillStyle=p.big?'#d4f03c':p.blue?'#9fd8ff':p.c?'#ffb21c':'#ff4a3d';cx.fillText(p.v,p.x,y);cx.restore()}
+ for(const p of txt){const L=p.big?1.1:.8,k=p.t/L;cx.save();cx.globalAlpha=k<.7?1:1-(k-.7)/.3;const pop=k<.12?.5+k/.12*.75:k<.25?1.25-(k-.12)/.13*.25:1;const s=(p.big?44:p.c?24:p.gold?14:15)*pop;cx.font=s+'px Jua, sans-serif';cx.lineWidth=p.big?7:4;cx.strokeStyle=p.blue?'#123a66':p.gold?'#0d3b12':'#3a1206';const y=p.y-k*(p.big?20:34);cx.strokeText(p.v,p.x,y);cx.fillStyle=p.big?'#d4f03c':p.blue?'#9fd8ff':p.gold?'#7dff6a':p.c?'#ffb21c':'#ff4a3d';cx.fillText(p.v,p.x,y);cx.restore()}
  cx.restore();
  // fever gauge
  cx.save();const fw=150,fxp=(W-fw)/2,fy=H-16;cx.fillStyle='rgba(15,22,40,.7)';cx.beginPath();cx.roundRect(fxp-4,fy-8,fw+8,16,8);cx.fill();

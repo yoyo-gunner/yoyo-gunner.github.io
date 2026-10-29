@@ -266,7 +266,7 @@ function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  gu:1,dex:{w0:1,w1:1,w2:1,p0:1},feverK:0,buffAt:0,buffEnd:0,
  freeGun:0,freeTreat:0,raidLv:1,raidTries:3,day:'',
  st:{kills:0,draws:0,merges:0,ups:0},mis:{},
- auto:false,sound:true,mul:1,last:Date.now(),gps:0}}
+ used:[],auto:false,sound:true,mul:1,last:Date.now(),gps:0}}
 let S;
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=Object.assign(fresh(),o);if(!S.pets.length){S.pets.push({id:S.nid++,t:0,g:0});S.petEq[0]=S.pets[0].id;S.dex.p0=1}return}}catch(e){}S=fresh()}
 function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -615,6 +615,7 @@ function renderModal(){
  else if(tab==='settings'){title='설정';const st=ST;
   h=`<div class="stats"><span>공격력<b>${fmt(st.dmg)}</b></span><span>공격속도<b>${st.spd.toFixed(2)}x</b></span><span>치명타 확률<b>${st.crit.toFixed(1)}%</b></span><span>치명타 피해<b>${fmt(st.critd)}%</b></span><span>골드 배율<b>${fmt(st.gold*100)}%</b></span><span>처치 수<b>${fmt(S.st.kills)}</b></span></div>
   <div class="bar"><button class="btn alt" data-act="snd">소리 ${S.sound?'켜짐':'꺼짐'}</button></div>
+  <p class="sub" style="margin-bottom:4px">쿠폰 코드</p><div class="bar" style="margin-top:0;flex-wrap:nowrap"><input id="coupon" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="쿠폰 코드 입력" style="flex:1;min-width:0;border-radius:12px;border:3px solid var(--line);padding:9px 10px;font-family:var(--f-display);font-size:16px;color:var(--ink);background:#fff"><button class="btn blue" data-act="cpn" style="flex:0 0 auto;padding:9px 14px">사용</button></div>
   <p class="sub" style="margin-bottom:4px">저장 코드 · 다른 기기로 옮길 때 복사해서 붙여넣어요</p>
   <textarea id="saveOut" readonly></textarea><div class="bar"><button class="btn alt" data-act="copy">코드 복사</button></div>
   <textarea id="saveIn" placeholder="여기에 저장 코드를 붙여넣기"></textarea><div class="bar"><button class="btn" data-act="imp">불러오기</button><button class="btn red" data-act="reset">${confirmReset?'정말 초기화? 한 번 더':'처음부터'}</button></div>
@@ -639,10 +640,14 @@ $('#sheetBody').addEventListener('click',e=>{
  if(act==='raid'){if(S.raidTries>0){S.raidTries--;startRaid()}return}
  if(b.dataset.mis){claimMission(b.dataset.mis);return}
  if(act==='snd'){S.sound=!S.sound;renderModal();return}
+ if(act==='cpn'){useCoupon($('#coupon').value);return}
  if(act==='copy'){const v=$('#saveOut').value;try{navigator.clipboard.writeText(v).then(()=>toast('복사했어요'),()=>{$('#saveOut').select();toast('선택됐어요. 길게 눌러 복사하세요')})}catch(err){$('#saveOut').select()}return}
  if(act==='imp'){try{const o=JSON.parse(decodeURIComponent(escape(atob($('#saveIn').value.trim()))));if(!o||!o.lv)throw 0;S=Object.assign(fresh(),o);ST=stats();resetWorld();save();toast('불러왔어요');closeModal()}catch(err){toast('코드가 올바르지 않아요')}return}
  if(act==='reset'){if(!confirmReset){confirmReset=true;renderModal();return}S=fresh();ST=stats();resetWorld();save();closeModal();toast('새로 시작!')}
 });
+const CPN={'o6hisk':1000,'gltmfo':10000,'1jb8r0l':3000};
+function hc(s){let h=5381;for(const c of s)h=(Math.imul(h,33)^c.codePointAt(0))>>>0;return h.toString(36)}
+function useCoupon(v){const c=(v||'').replace(/\s+/g,'').toUpperCase();if(!c){toast('쿠폰 코드를 입력하세요');return}const h=hc(c);if(!(h in CPN)){toast('없는 쿠폰 코드예요');return}S.used=S.used||[];if(S.used.includes(h)){toast('이미 사용한 쿠폰이에요');return}S.used.push(h);S.gem+=CPN[h];happyT=1.4;sfx('win');save();toast('쿠폰 사용! 💎 +'+CPN[h].toLocaleString());const i=$('#coupon');if(i)i.value='';hud()}
 function rebGain(){const s=S.maxS;if(s<15)return 0;return Math.floor(Math.pow(s-12,1.9)*(1+S.rebCount*.15))}
 function doRebirth(){const g=rebGain();if(g<=0)return;S.orb+=g;S.rebCount++;S.gold=0;S.W=1;S.sub=1;S.maxS=0;S.farm=false;S.lv={atk:0,spd:0,gold:0};ST=stats();resetWorld();save();closeModal();toast('환생! 구슬 +'+fmt(g));happyT=1.5;sfx('win')}
 function resetWorld(){foes=[];buls=[];boss=null;raid=null;mode='walk';walkT=1;hudStage()}

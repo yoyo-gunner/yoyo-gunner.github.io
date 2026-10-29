@@ -645,7 +645,7 @@ function renderModal(){
   <div class="bar"><button class="btn red" data-act="raid" ${!busy?'':'disabled'}>${busy?'보스전이 끝나면 도전할 수 있어요':'도전하기'}</button></div>`}
  else if(tab==='missions'){title='미션';h=`<p class="sub">미션을 깨면 다이아를 받아요. 단계가 오를수록 목표와 보상이 커져요.</p><div class="list">`+missions().map(m=>`<div class="li"><img src="${src(m.ic)}" alt=""><div class="m"><b>${m.n}</b><span>${m.lbl?m.lbl(Math.min(m.cur,m.goal))+' / '+m.lbl(m.goal):fmt(Math.min(m.cur,m.goal))+' / '+fmt(m.goal)}</span><div class="pb"><i style="width:${Math.min(100,m.cur/m.goal*100)}%"></i></div></div><button class="btn blue" data-mis="${m.k}" ${m.cur>=m.goal?'':'disabled'}><img src="${src('i_gem')}" alt="">${m.r}</button></div>`).join('')+`</div>`}
  else if(tab==='rebDone'){title='환생 완료!';const T=S.rebTarget;h=`<div class="bar" style="justify-content:center"><img src="${src('yx_happy')}" alt="" style="width:110px"></div><p class="sub" style="text-align:center;margin:0">${S.rebCount}번째 환생이에요</p><div class="big" style="font-size:40px"><img src="${src('i_orb')}" alt="" style="width:44px;height:44px">+${fmt(lastReb)}</div><p class="sub" style="text-align:center">지금 가진 환생 구슬 ${fmt(S.orb)}개<br>${T>0?'⏩ '+(Math.floor(T/5)+1)+'-'+(T%5+1)+'까지는 2배속으로 달려요':''}</p><div class="bar"><button class="btn pur" data-act="rebAllGo"><img src="${src('i_orb')}" alt="">구슬 한 번에 쓰기</button><button class="btn alt" data-act="rebOpen">직접 고르기</button></div>`}
- else if(tab==='offline'){title='다녀오셨어요!';h=`<div class="bar" style="justify-content:center;gap:0"><img src="${src('yx_sleep')}" alt="" style="width:130px"><img src="${src('gu_sleep')}" alt="" style="width:90px"></div><p class="sub" style="text-align:center">요요랑 구름이가 쉬는 동안 골드를 모았어요</p><div class="big"><img src="${src('i_coin')}" alt="">+${fmt(offGold)}</div><div class="bar"><button class="btn" data-act="closeOff">받기</button></div>`}
+ else if(tab==='offline'){title='다녀오셨어요!';h=`<div class="bar" style="justify-content:center;gap:0"><img src="${src('yx_sleep')}" alt="" style="width:130px"><img src="${src('gu_sleep')}" alt="" style="width:90px"></div><p class="sub" style="text-align:center">요요랑 구름이가 쉬는 동안 ${offTo?'<b>'+offFrom+' → '+offTo+'</b>까지 진행하고 ':''}골드를 모았어요${offTo&&S.maxS<=sIdx()?'<br>(전에 깼던 곳까지만 자동 진행해요)':''}</p><div class="big"><img src="${src('i_coin')}" alt="">+${fmt(offGold)}</div><div class="bar"><button class="btn" data-act="closeOff">받기</button></div>`}
  else if(tab==='settings'){title='설정';const st=ST;
   h=`<div class="stats"><span>공격력<b>${fmt(st.dmg)}</b></span><span>공격속도<b>${st.spd.toFixed(2)}x</b></span><span>치명타 확률<b>${st.crit.toFixed(1)}%</b></span><span>치명타 피해<b>${fmt(st.critd)}%</b></span><span>골드 배율<b>${fmt(st.gold*100)}%</b></span><span>처치 수<b>${fmt(S.st.kills)}</b></span></div>
   <div class="bar"><button class="btn alt" data-act="snd">소리 ${S.sound?'켜짐':'꺼짐'}</button></div>
@@ -715,7 +715,18 @@ function claimMission(k){const m=missions().find(x=>x.k===k);if(!m||m.cur<m.goal
 
 /* ---------- daily / offline ---------- */
 function daily(){const d=new Date().toISOString().slice(0,10);if(S.day!==d){const first=!S.day;S.day=d;S.raidTries=3;if(!first){S.gem+=100;toast('출석 보상 💎 +100')}}}
-function offline(){const dt=Math.min(8*3600,(now()-(S.last||now()))/1e3);if(dt>60&&S.gps>0){offGold=S.gps*dt*.6;S.gold+=offGold;openModal('offline')}}
+let offFrom='',offTo='';
+function offline(){const dt=Math.min(8*3600,(now()-(S.last||now()))/1e3);if(dt<=60)return;
+ ST=stats();let budget=dt,gold=0,st=sIdx();const s0=st;
+ let dps=0;S.gunEq.forEach((id,i)=>{const g=S.guns.find(x=>x.id===id);if(g)dps+=toyDps(g,i)});
+ if(!S.farm&&dps>0){while(st<S.maxS){const W=Math.floor(st/5)+1,sub=st%5+1,boss=sub===5;
+   const n=boss?1:12+Math.min(18,Math.floor(W*1.5));const hp=eHP(st)*(boss?34:n);const tk=hp/dps;
+   if(tk>(boss?20:35))break;const tt=tk+(boss?2:1.5);if(budget<tt)break;budget-=tt;
+   gold+=eGold(st)*ST.gold*(boss?12:n);if(boss)S.gem+=5+W*2;st++}
+  if(st>s0){S.W=Math.floor(st/5)+1;S.sub=st%5+1;S.st.kills+=0}}
+ gold+=S.gps*budget*.6;offGold=gold;S.gold+=gold;
+ offFrom=st>s0?(Math.floor(s0/5)+1)+'-'+(s0%5+1):'';offTo=st>s0?S.W+'-'+S.sub:'';
+ if(gold>0||offTo){resetWorld();openModal('offline')}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else{offline();daily();S.last=now()}});
 
 /* ---------- loop ---------- */

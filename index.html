@@ -58,7 +58,7 @@ button:focus-visible{outline:3px solid var(--ball);outline-offset:2px}
 @keyframes tin{0%{opacity:0;transform:translateY(10px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0;transform:translateY(-12px)}}
 
 /* Upgrade dock */
-#dock{background:var(--night);border-top:3px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));z-index:3}
+#dock{background:var(--night);border-top:3px solid var(--line);padding:8px 10px;z-index:3}
 #dockTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
 .seg{display:flex;background:var(--line);border-radius:999px;padding:2px}
 .seg button{font-size:13px;padding:3px 10px;border-radius:999px;color:#aab6d6}
@@ -318,12 +318,12 @@ window.addEventListener('resize',resize);
 /* ---------- world state ---------- */
 let foes=[],buls=[],fx=[],txt=[],coins=[],toysS=[{cd:0},{cd:.3},{cd:.6}],petsS=[{cd:0},{cd:.4},{cd:.8}];
 let mode='walk',walkT=1,bgY=0,waveTotal=1,waveKilled=0,boss=null,bossT=0,raid=null,t=0,shake=0,goldWin=0,goldWinT=0;
-let rush=false,barkCD=0,barkT=0,happyT=0,guT=6,guAnim=0,bubbles=[];
+let yX=180,yT=180,yRe=0,yDir=1,yMov=0,gX=90,rush=false,barkCD=0,barkT=0,happyT=0,guT=6,guAnim=0,bubbles=[];
 const BARK_CD=20;
 const YY=()=>H-118;
-const TOFF=[[36,-4],[-36,-4],[0,-62]];
-const POFF=[[72,30],[-72,32],[112,-6]];
-const GUP=()=>[W/2-104,YY()-26];
+const TOFF=[[28,-2],[-28,-2],[0,-48]];
+const POFF=[[56,22],[-56,24],[86,-6]];
+const GUP=()=>[gX,YY()-22];
 function theme(){return THEMES[Math.floor((S.W-1)/3)%3]}
 function spawnWave(){
  const s=sIdx(),th=theme();foes=[];waveKilled=0;
@@ -341,9 +341,9 @@ function startRaid(){
  boss={k:b.k,n:'레이드 '+b.n+' Lv.'+L,x:W/2,y:-90,ty:170,hp,max:hp,r:70,hitT:0,slowT:0,stunT:0,boss:1};foes.push(boss);mode='raid';closeModal();toast('레이드 시작! 30초 안에 처치하세요');hudStage()}
 
 /* ---------- firing ---------- */
-function nearest(n){const y=YY();return foes.filter(f=>f.y>-30&&f.hp>0).sort((a,b)=>Math.hypot(a.x-W/2,a.y-y)-Math.hypot(b.x-W/2,b.y-y)).slice(0,n)}
+function nearest(n){const y=YY();return foes.filter(f=>f.y>-30&&f.hp>0).sort((a,b)=>Math.hypot(a.x-yX,a.y-y)-Math.hypot(b.x-yX,b.y-y)).slice(0,n)}
 function fire(i,g,tg){
- const d=TOYS[g.t];const ox=W/2+TOFF[i][0],oy=YY()+TOFF[i][1];
+ const d=TOYS[g.t];const ox=yX+TOFF[i][0],oy=YY()+TOFF[i][1];
  const a=Math.atan2(tg.y-oy,tg.x-ox);
  const rate=d.rate*ST.spd,over=Math.max(1,rate/20);const pel=d.pel||1;
  for(let p=0;p<pel;p++){
@@ -354,7 +354,7 @@ function fire(i,g,tg){
  toysS[i].kick=1;sfx('squeak');
  if(Math.random()<.05&&bubbles.length<3)bubbles.push({x:ox+(Math.random()-.5)*20,y:oy-26,t:0})}
 function petFire(i,p,tg){
- const ox=W/2+POFF[i][0],oy=YY()+POFF[i][1];const a=Math.atan2(tg.y-oy,tg.x-ox);
+ const ox=yX+POFF[i][0],oy=YY()+POFF[i][1];const a=Math.atan2(tg.y-oy,tg.x-ox);
  const crit=Math.random()*100<ST.crit;buls.push({x:ox,y:oy,vx:Math.cos(a)*480,vy:Math.sin(a)*480,dm:ST.dmg*.8*GM[p.g]*(crit?ST.critd/100:1),crit,k:PETS[p.t].k,sz:15,pr:1,hit:[],splash:0,slow:0,bounce:0,life:1.5,g:p.g,spin:0});petsS[i].hop=1}
 
 /* ---------- damage ---------- */
@@ -377,8 +377,8 @@ function bark(){
  if(barkCD>0)return;
  if(!foes.some(f=>f.hp>0&&f.y>-20)){toast('짖을 상대가 아직 없어요');return}
  barkCD=BARK_CD;barkT=.9;shake=.35;sfx('bark');
- fx.push({ring:1,x:W/2,y:YY(),t:0,l:.6,r:260,c:'#d4f03c'});
- txt.push({x:W/2,y:YY()-70,v:'멍!',c:true,t:0,big:1});
+ fx.push({ring:1,x:yX,y:YY(),t:0,l:.6,r:260,c:'#d4f03c'});
+ txt.push({x:yX,y:YY()-56,v:'멍!',c:true,t:0,big:1});
  for(const f of foes.slice()){f.stunT=2.2;hurt(f,ST.dmg*6*(1+S.gu*.1),true,f.x,f.y)}
  barkCD=BARK_CD}
 function guRainNow(){
@@ -387,7 +387,7 @@ function guRainNow(){
  if(foes.length)txt.push({x:gx,y:gy-30,v:'구름 비~',c:false,t:0,blue:1})}
 $('#barkBtn').addEventListener('click',bark);
 $('#buffBtn').addEventListener('click',()=>{const cd=15*60e3;if(buffOn()){toast('응원 중! 남은 시간 '+Math.ceil((S.buffEnd-now())/60e3)+'분');return}if(now()-S.buffAt<cd){toast('구름이가 쉬는 중이에요 · '+timeLeft('buffAt',cd));return}S.buffAt=now();S.buffEnd=now()+3*60e3;ST=stats();happyT=1;toast('구름이의 응원! 3분 동안 공격력·골드 2배');sfx('win')});
-cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;if(Math.hypot(x-W/2,y-YY())<50)bark()});
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;if(Math.hypot(x-yX,y-YY())<42)bark()});
 
 /* ---------- update ---------- */
 function update(dt){
@@ -396,6 +396,9 @@ function update(dt){
  if(fever>0){fever-=dt;if(fever<=0){fever=0;ST=stats()}}
  barkCD=Math.max(0,barkCD-dt);barkT=Math.max(0,barkT-dt);happyT=Math.max(0,happyT-dt);guAnim=Math.max(0,guAnim-dt*2);
  if(mode==='walk'){walkT-=dt;bgY+=dt*90;if(walkT<=0)spawnWave()}
+ yRe-=dt;if(yRe<=0){yT=128+Math.random()*104;yRe=1.4+Math.random()*2.4}
+ {const dx=yT-yX;yMov=Math.abs(dx)>1.5?1:0;if(yMov){yDir=Math.sign(dx);yX+=yDir*Math.min(Math.abs(dx),72*dt)}}
+ gX+=(Math.max(46,yX-86)-gX)*Math.min(1,dt*2.5);
  guT-=dt;if(guT<=0){guT=12;if(foes.length)guRainNow()}
  for(const f of foes){if(f.hp<=0)continue;f.stunT-=dt;f.slowT-=dt;f.hitT-=dt;if(f.stunT>0)continue;const sl=f.slowT>0?.45:1;
   if(f.y<f.ty)f.y=Math.min(f.ty,f.y+(f.boss?60:34)*sl*dt)}
@@ -457,24 +460,24 @@ function render(){
   if(f.hitT>0){cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.35;drawImg(f.k,f.x,f.y+bob,sz*sq,sz/sq,wob);cx.restore()}
   if(f.stunT>0){cx.save();cx.font='14px Jua, sans-serif';cx.textAlign='center';cx.fillStyle='#ffd23a';for(let s=0;s<3;s++){const a=t*4+s*2.1;cx.fillText('★',f.x+Math.cos(a)*18,f.y-sz*.45+Math.sin(a)*5)}cx.restore()}
   if(!f.boss&&f.hp<f.max){cx.fillStyle='rgba(0,0,0,.55)';cx.fillRect(f.x-20,f.y+30,40,5);cx.fillStyle='#ff5d6c';cx.fillRect(f.x-20,f.y+30,40*Math.max(0,f.hp/f.max),5)}}
- const yx=W/2,yy=YY();
+ const yx=yX,yy=YY();
  // gureumi on cloud
  const [gx,gy]=GUP();const gb=Math.sin(t*2.2)*5;
- shadow(gx,yy+40,22);drawImg(guAnim>0||buffOn()?'gu_happy':'gu_cloud',gx,gy+gb-guAnim*6,58,58);
- cx.save();cx.font='11px Jua, sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.strokeStyle='#1d2740';cx.lineWidth=3;cx.strokeText('구름이 Lv.'+S.gu,gx,gy+gb+38);cx.fillText('구름이 Lv.'+S.gu,gx,gy+gb+38);cx.restore();
+ shadow(gx,yy+36,18);drawImg(guAnim>0||buffOn()?'gu_happy':'gu_cloud',gx,gy+gb-guAnim*6,50,50);
+ cx.save();cx.font='11px Jua, sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.strokeStyle='#1d2740';cx.lineWidth=3;cx.strokeText('구름이 Lv.'+S.gu,gx,gy+gb+33);cx.fillText('구름이 Lv.'+S.gu,gx,gy+gb+33);cx.restore();
  // yoyo
- shadow(yx,yy+44,36);
- const walking=mode==='walk';const yb=walking?Math.abs(Math.sin(t*10))*-6:Math.sin(t*3)*1.5;
+ shadow(yx,yy+34,28);
+ const hopping=mode==='walk'||yMov;const yb=hopping?Math.abs(Math.sin(t*11))*-8:Math.sin(t*3)*1.5;const tilt=yMov?yDir*.09*Math.sin(t*11):0;
  const yk=barkT>0?'yx_bark':happyT>0?'yx_happy':'y'+S.skin;
  const ysq=barkT>0?1+Math.sin(barkT*30)*.04:1;
- drawImg(yk,yx,yy+yb,100*ysq,100/ysq);
- if(fever>0||buffOn()){cx.save();cx.globalAlpha=.5+.3*Math.sin(t*6);cx.strokeStyle=fever>0?'#ffd23a':'#9fd8ff';cx.lineWidth=3;cx.beginPath();cx.ellipse(yx,yy+44,42,12,0,0,7);cx.stroke();cx.restore()}
+ drawImg(yk,yx,yy+yb,76*ysq,76/ysq,tilt);
+ if(fever>0||buffOn()){cx.save();cx.globalAlpha=.5+.3*Math.sin(t*6);cx.strokeStyle=fever>0?'#ffd23a':'#9fd8ff';cx.lineWidth=3;cx.beginPath();cx.ellipse(yx,yy+34,32,9,0,0,7);cx.stroke();cx.restore()}
  // pets
- S.petEq.forEach((id,i)=>{const p=S.pets.find(x=>x.id===id);if(!p)return;const hp=petsS[i].hop||0;const px=yx+POFF[i][0],py=yy+POFF[i][1]+Math.sin(t*4+i*2)*4-Math.sin(hp*Math.PI)*8;shadow(px,yy+POFF[i][1]+20,14);drawImg(PETS[p.t].k,px,py,42,42);badge(px+16,py-16,p.g)});
+ S.petEq.forEach((id,i)=>{const p=S.pets.find(x=>x.id===id);if(!p)return;const hp=petsS[i].hop||0;const px=yx+POFF[i][0],py=yy+POFF[i][1]+Math.sin(t*4+i*2)*4-Math.sin(hp*Math.PI)*8;shadow(px,yy+POFF[i][1]+17,12);drawImg(PETS[p.t].k,px,py,36,36);badge(px+14,py-14,p.g)});
  // held toys (squash on squeak)
  S.gunEq.forEach((id,i)=>{const g=S.guns.find(x=>x.id===id);if(!g)return;const G=toysS[i];const ox=yx+TOFF[i][0],oy=yy+TOFF[i][1]+yb+(i===2?Math.sin(t*3)*3:0);
-  const k=G.kick||0;if(g.g>=4){cx.save();cx.globalAlpha=.35+.15*Math.sin(t*5);cx.fillStyle=GC[g.g];cx.beginPath();cx.arc(ox,oy,22,0,7);cx.fill();cx.restore()}
-  drawImg(TOYS[g.t].k,ox,oy+k*3,i===2?34:38,i===2?34:38,0,1+k*.22,1-k*.25);badge(ox+15,oy-15,g.g)});
+  const k=G.kick||0;if(g.g>=4){cx.save();cx.globalAlpha=.35+.15*Math.sin(t*5);cx.fillStyle=GC[g.g];cx.beginPath();cx.arc(ox,oy,18,0,7);cx.fill();cx.restore()}
+  drawImg(TOYS[g.t].k,ox,oy+k*3,i===2?28:32,i===2?28:32,0,1+k*.22,1-k*.25)});
  // bullets = flying toys
  for(const b of buls){if(b.k){drawImg(b.k,b.x,b.y,b.sz,b.sz,t*b.spin)}else{cx.fillStyle=b.col;cx.beginPath();cx.arc(b.x,b.y,b.sz*.6,0,7);cx.fill()}}
  for(const p of fx){const k=p.t/p.l;cx.save();cx.globalAlpha=1-k;if(p.ring){cx.strokeStyle=p.c;cx.lineWidth=6*(1-k)+1;cx.beginPath();cx.arc(p.x,p.y,p.r*(.4+k*.8),0,7);cx.stroke()}else{cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r*(1-k*.5),0,7);cx.fill()}cx.restore()}

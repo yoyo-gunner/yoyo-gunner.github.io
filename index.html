@@ -323,7 +323,7 @@ function stats(){
 let ST=stats();
 const STAR_MAX=20;
 const STAR_COST=[100,150,200,300,400,500,700,900,1200,1500,2000,2500,3000,4000,5000,6500,8000,10000,12500,15000];
-const STAR_RATE=[100,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,12,10];
+const STAR_RATE=[100,95,90,85,80,70,60,50,40,35,30,25,20,15,10,7,5,3,2,1];
 const slotAtk=s=>Math.pow(2,s);const slotSpd=s=>1+.1*s;
 const SL=()=>{if(!S.stars){S.stars=(S.slotLv||[0,0,0]).map(L=>Math.min(STAR_MAX,Math.floor(L*Math.log2(1.0375))))}return S.stars};
 function toyDps(g,si){const d=TOYS[g.t];const L=si==null?0:SL()[si];return ST.dmg*GM[g.g]*d.dmg*(d.pel||1)*d.rate*ST.spd*slotAtk(L)*slotSpd(L)*(1+ST.crit/100*(ST.critd/100-1))}

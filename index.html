@@ -473,7 +473,7 @@ function render(){
  drawImg(yk,yx,yy+yb,76*ysq,76/ysq,tilt);
  if(fever>0||buffOn()){cx.save();cx.globalAlpha=.5+.3*Math.sin(t*6);cx.strokeStyle=fever>0?'#ffd23a':'#9fd8ff';cx.lineWidth=3;cx.beginPath();cx.ellipse(yx,yy+34,32,9,0,0,7);cx.stroke();cx.restore()}
  // pets
- S.petEq.forEach((id,i)=>{const p=S.pets.find(x=>x.id===id);if(!p)return;const hp=petsS[i].hop||0;const px=yx+POFF[i][0],py=yy+POFF[i][1]+Math.sin(t*4+i*2)*4-Math.sin(hp*Math.PI)*8;shadow(px,yy+POFF[i][1]+17,12);drawImg(PETS[p.t].k,px,py,36,36);badge(px+14,py-14,p.g)});
+ S.petEq.forEach((id,i)=>{const p=S.pets.find(x=>x.id===id);if(!p)return;const hp=petsS[i].hop||0;const px=yx+POFF[i][0],py=yy+POFF[i][1]+Math.sin(t*4+i*2)*4-Math.sin(hp*Math.PI)*8;shadow(px,yy+POFF[i][1]+17,12);drawImg(PETS[p.t].k,px,py,36,36)});
  // held toys (squash on squeak)
  S.gunEq.forEach((id,i)=>{const g=S.guns.find(x=>x.id===id);if(!g)return;const G=toysS[i];const ox=yx+TOFF[i][0],oy=yy+TOFF[i][1]+yb+(i===2?Math.sin(t*3)*3:0);
   const k=G.kick||0;if(g.g>=4){cx.save();cx.globalAlpha=.35+.15*Math.sin(t*5);cx.fillStyle=GC[g.g];cx.beginPath();cx.arc(ox,oy,18,0,7);cx.fill();cx.restore()}

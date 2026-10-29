@@ -278,7 +278,7 @@ function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  gu:1,dex:{w0:1,w1:1,w2:1,p0:1},feverK:0,buffAt:0,buffEnd:0,
  freeGun:0,freeTreat:0,raidLv:1,raidTries:3,day:'',
  st:{kills:0,draws:0,merges:0,ups:0},mis:{},
- used:[],rebTarget:0,slotLv:[0,0,0],gskins:[0],gskin:0,auto:false,sound:true,mul:1,last:Date.now(),gps:0}}
+ used:[],rebTarget:0,bestS:0,slotLv:[0,0,0],gskins:[0],gskin:0,auto:false,sound:true,mul:1,last:Date.now(),gps:0}}
 let S;
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=Object.assign(fresh(),o);if(!S.pets.length){S.pets.push({id:S.nid++,t:0,g:0});S.petEq[0]=S.pets[0].id;S.dex.p0=1}return}}catch(e){}S=fresh()}
 function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -447,10 +447,10 @@ function update(dt){
  else if(mode==='fight'&&foes.length===0)waveClear();
  else if(mode==='fight'){waveT-=dt;if(waveT<=0)waveFail()}
 }
-function waveClear(){if(!S.farm&&S.sub<5)S.sub++;S.maxS=Math.max(S.maxS,sIdx());mode='walk';walkT=rush?.35:1.1;hudStage();save()}
+function waveClear(){if(!S.farm&&S.sub<5)S.sub++;S.maxS=Math.max(S.maxS,sIdx());best();mode='walk';walkT=rush?.35:1.1;hudStage();save()}
 function bossClear(){
  const gem=5+S.W*2;S.gem+=gem;toast('보스 처치! 💎 +'+gem);happyT=1.6;
- S.W++;S.sub=1;S.maxS=Math.max(S.maxS,sIdx());boss=null;mode='walk';walkT=1.6;
+ S.W++;S.sub=1;S.maxS=Math.max(S.maxS,sIdx());best();boss=null;mode='walk';walkT=1.6;
  if((S.W-1)%3===0)toast(theme().n+' 지역 도착!');
  hudStage();save();sfx('win')}
 function waveFail(){for(const f of foes)for(let i=0;i<3;i++)fx.push({x:f.x,y:f.y,vx:(Math.random()-.5)*80,vy:-160,t:0,l:.4,c:'#fff',r:5});foes=[];mode='walk';walkT=1.2;toast('시간 초과! 적이 도망갔어요 · 다시 도전');hudStage()}
@@ -509,6 +509,7 @@ function render(){
  cx.save();const fw=150,fxp=(W-fw)/2,fy=H-16;cx.fillStyle='rgba(15,22,40,.7)';cx.beginPath();cx.roundRect(fxp-4,fy-8,fw+8,16,8);cx.fill();
  cx.fillStyle=fever>0?'#ffd23a':'#ff9d3c';const fr=fever>0?fever/10:S.feverK/100;cx.beginPath();cx.roundRect(fxp,fy-4,fw*fr,8,4);cx.fill();
  cx.font='10px Jua, sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText(fever>0?'간식 피버!':'피버 '+S.feverK+'/100',W/2,fy-11);cx.restore();
+ if(boost()){cx.save();const B=best();const tx='⏩ 2배속 · '+(Math.floor(B/5)+1)+'-'+(B%5+1)+'까지';cx.font='12px Jua, sans-serif';const w=cx.measureText(tx).width+16;cx.fillStyle='rgba(255,200,61,.92)';cx.beginPath();cx.roundRect((W-w)/2,mode==='fight'?36:10,w,20,10);cx.fill();cx.fillStyle='#3a2a00';cx.textAlign='center';cx.fillText(tx,W/2,(mode==='fight'?36:10)+14);cx.restore()}
  if(mode==='fight'){cx.save();const tw=120,tx=(W-tw)/2,tyy=10;cx.fillStyle='rgba(15,22,40,.75)';cx.beginPath();cx.roundRect(tx-6,tyy,tw+12,22,11);cx.fill();cx.fillStyle=waveT<10?'#ff5d6c':'#d4f03c';cx.beginPath();cx.roundRect(tx,tyy+15,tw*Math.max(0,waveT/35),4,2);cx.fill();cx.font='12px Jua, sans-serif';cx.textAlign='center';cx.fillStyle=waveT<10?'#ff9aa4':'#fff';cx.fillText('남은 시간 '+Math.ceil(Math.max(0,waveT))+'초',W/2,tyy+12);cx.restore()}
  if(boss&&(mode==='boss'||mode==='raid')){const tl=mode==='raid'?raid.t:bossT;
   cx.save();cx.fillStyle='rgba(15,22,40,.85)';cx.beginPath();cx.roundRect(66,58,W-132,46,10);cx.fill();
@@ -644,8 +645,8 @@ function renderModal(){
   <div class="detail"><img src="${src(BOSSES[(L+1)%4].k)}" alt=""><div style="flex:1"><div class="dn">레이드 Lv.${L} · ${BOSSES[(L+1)%4].n}</div><div class="ds">체력 ${fmt(eHP(8+L*5)*45)}<br>승리 보상 💎 ${30+L*10} · 도전 무제한</div></div></div>
   <div class="bar"><button class="btn red" data-act="raid" ${!busy?'':'disabled'}>${busy?'보스전이 끝나면 도전할 수 있어요':'도전하기'}</button></div>`}
  else if(tab==='missions'){title='미션';h=`<p class="sub">미션을 깨면 다이아를 받아요. 단계가 오를수록 목표와 보상이 커져요.</p><div class="list">`+missions().map(m=>`<div class="li"><img src="${src(m.ic)}" alt=""><div class="m"><b>${m.n}</b><span>${m.lbl?m.lbl(Math.min(m.cur,m.goal))+' / '+m.lbl(m.goal):fmt(Math.min(m.cur,m.goal))+' / '+fmt(m.goal)}</span><div class="pb"><i style="width:${Math.min(100,m.cur/m.goal*100)}%"></i></div></div><button class="btn blue" data-mis="${m.k}" ${m.cur>=m.goal?'':'disabled'}><img src="${src('i_gem')}" alt="">${m.r}</button></div>`).join('')+`</div>`}
- else if(tab==='rebDone'){title='환생 완료!';const T=S.rebTarget;h=`<div class="bar" style="justify-content:center"><img src="${src('yx_happy')}" alt="" style="width:110px"></div><p class="sub" style="text-align:center;margin:0">${S.rebCount}번째 환생이에요</p><div class="big" style="font-size:40px"><img src="${src('i_orb')}" alt="" style="width:44px;height:44px">+${fmt(lastReb)}</div><p class="sub" style="text-align:center">지금 가진 환생 구슬 ${fmt(S.orb)}개<br>${T>0?'⏩ '+(Math.floor(T/5)+1)+'-'+(T%5+1)+'까지는 2배속으로 달려요':''}</p><div class="bar"><button class="btn pur" data-act="rebAllGo"><img src="${src('i_orb')}" alt="">구슬 한 번에 쓰기</button><button class="btn alt" data-act="rebOpen">직접 고르기</button></div>`}
- else if(tab==='offline'){title='다녀오셨어요!';h=`<div class="bar" style="justify-content:center;gap:0"><img src="${src('yx_sleep')}" alt="" style="width:130px"><img src="${src('gu_sleep')}" alt="" style="width:90px"></div><p class="sub" style="text-align:center">요요랑 구름이가 쉬는 동안 ${offTo?'<b>'+offFrom+' → '+offTo+'</b>까지 진행하고 ':''}골드를 모았어요${offTo&&S.maxS<=sIdx()?'<br>(전에 깼던 곳까지만 자동 진행해요)':''}</p><div class="big"><img src="${src('i_coin')}" alt="">+${fmt(offGold)}</div><div class="bar"><button class="btn" data-act="closeOff">받기</button></div>`}
+ else if(tab==='rebDone'){title='환생 완료!';const T=best();h=`<div class="bar" style="justify-content:center"><img src="${src('yx_happy')}" alt="" style="width:110px"></div><p class="sub" style="text-align:center;margin:0">${S.rebCount}번째 환생이에요</p><div class="big" style="font-size:40px"><img src="${src('i_orb')}" alt="" style="width:44px;height:44px">+${fmt(lastReb)}</div><p class="sub" style="text-align:center">지금 가진 환생 구슬 ${fmt(S.orb)}개<br>${T>0?'⏩ '+(Math.floor(T/5)+1)+'-'+(T%5+1)+'까지는 2배속으로 달려요':''}</p><div class="bar"><button class="btn pur" data-act="rebAllGo"><img src="${src('i_orb')}" alt="">구슬 한 번에 쓰기</button><button class="btn alt" data-act="rebOpen">직접 고르기</button></div>`}
+ else if(tab==='offline'){title='다녀오셨어요!';h=`<div class="bar" style="justify-content:center;gap:0"><img src="${src('yx_sleep')}" alt="" style="width:130px"><img src="${src('gu_sleep')}" alt="" style="width:90px"></div><p class="sub" style="text-align:center">요요랑 구름이가 쉬는 동안 ${offTo?'<b>'+offFrom+' → '+offTo+'</b>까지 진행하고 ':''}골드를 모았어요${!offTo&&sIdx()>=best()?'<br>(이미 최고 기록이라 골드만 모았어요 · 자동 진행은 최고 기록까지만)':''}</p><div class="big"><img src="${src('i_coin')}" alt="">+${fmt(offGold)}</div><div class="bar"><button class="btn" data-act="closeOff">받기</button></div>`}
  else if(tab==='settings'){title='설정';const st=ST;
   h=`<div class="stats"><span>공격력<b>${fmt(st.dmg)}</b></span><span>공격속도<b>${st.spd.toFixed(2)}x</b></span><span>치명타 확률<b>${st.crit.toFixed(1)}%</b></span><span>치명타 피해<b>${fmt(st.critd)}%</b></span><span>골드 배율<b>${fmt(st.gold*100)}%</b></span><span>처치 수<b>${fmt(S.st.kills)}</b></span></div>
   <div class="bar"><button class="btn alt" data-act="snd">소리 ${S.sound?'켜짐':'꺼짐'}</button></div>
@@ -700,7 +701,7 @@ function slStep(i,d){if(slotBuy(i)){sfx('up');renderModal();slH=setTimeout(()=>s
 document.getElementById('sheetBody').addEventListener('pointerdown',e=>{const b=e.target.closest('[data-slot]');if(!b||b.disabled)return;e.preventDefault();slStop();const i=+b.dataset.slot;if(slotBuy(i)){sfx('up');renderModal();slH=setTimeout(()=>slStep(i,150),380)}});
 ['pointerup','pointercancel','blur'].forEach(ev=>window.addEventListener(ev,slStop));
 function rebGain(){const s=S.maxS;if(s<15)return 0;return Math.floor(Math.pow(s-12,1.9)*(1+S.rebCount*.15))}
-let lastReb=0;function doRebirth(){const g=rebGain();if(g<=0)return;S.rebTarget=S.maxS;lastReb=g;S.orb+=g;S.rebCount++;S.gold=0;S.W=1;S.sub=1;S.maxS=0;S.farm=false;S.lv={atk:0,spd:0,gold:0};ST=stats();resetWorld();save();openModal('rebDone');happyT=1.5;sfx('win')}
+let lastReb=0;function doRebirth(){const g=rebGain();if(g<=0)return;best();S.rebTarget=S.bestS;lastReb=g;S.orb+=g;S.rebCount++;S.gold=0;S.W=1;S.sub=1;S.maxS=0;S.farm=false;S.lv={atk:0,spd:0,gold:0};ST=stats();resetWorld();save();openModal('rebDone');happyT=1.5;sfx('win')}
 function resetWorld(){foes=[];buls=[];boss=null;raid=null;mode='walk';walkT=1;hudStage()}
 
 /* ---------- missions ---------- */
@@ -719,12 +720,13 @@ let offFrom='',offTo='';
 function offline(){const dt=Math.min(8*3600,(now()-(S.last||now()))/1e3);if(dt<=60)return;
  ST=stats();let budget=dt,gold=0,st=sIdx();const s0=st;
  let dps=0;S.gunEq.forEach((id,i)=>{const g=S.guns.find(x=>x.id===id);if(g)dps+=toyDps(g,i)});
- if(!S.farm&&dps>0){while(st<S.maxS){const W=Math.floor(st/5)+1,sub=st%5+1,boss=sub===5;
+ const B=best();if(!S.farm&&dps>0){while(st<B){const W=Math.floor(st/5)+1,sub=st%5+1,boss=sub===5;
    const n=boss?1:12+Math.min(18,Math.floor(W*1.5));const hp=eHP(st)*(boss?34:n);const tk=hp/dps;
    if(tk>(boss?20:35))break;const tt=tk+(boss?2:1.5);if(budget<tt)break;budget-=tt;
-   gold+=eGold(st)*ST.gold*(boss?12:n);if(boss)S.gem+=5+W*2;st++}
-  if(st>s0){S.W=Math.floor(st/5)+1;S.sub=st%5+1;S.st.kills+=0}}
- gold+=S.gps*budget*.6;offGold=gold;S.gold+=gold;
+   const sg=eGold(st)*ST.gold*(boss?12:n);gold+=sg;S.gold+=sg;if(boss)S.gem+=5+W*2;st++;
+   if(S.auto){autoBuy();ST=stats();dps=0;S.gunEq.forEach((id,i)=>{const g=S.guns.find(x=>x.id===id);if(g)dps+=toyDps(g,i)})}}
+  if(st>s0){S.W=Math.floor(st/5)+1;S.sub=st%5+1;S.maxS=Math.max(S.maxS,st)}}
+ const lg=S.gps*budget*.6;gold+=lg;offGold=gold;S.gold+=lg;
  offFrom=st>s0?(Math.floor(s0/5)+1)+'-'+(s0%5+1):'';offTo=st>s0?S.W+'-'+S.sub:'';
  if(gold>0||offTo){resetWorld();openModal('offline')}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else{offline();daily();S.last=now()}});
@@ -734,7 +736,8 @@ let lt=performance.now(),hudT=0,saveT=0;
 function loop(n){const dt=Math.min(.05,(n-lt)/1e3);lt=n;
  if(!document.hidden){const fast=boost();update(dt);if(fast)update(dt);render();hudT+=dt;saveT+=dt;if(hudT>.2){hudT=0;if(!buffOn()&&S.buffEnd&&ST.dmg){}autoBuy();ST=stats();hud();if(tab&&COL[tab]&&COL[tab].free&&!sel)updFree()}if(saveT>10){saveT=0;save()}}
  requestAnimationFrame(loop)}
-function boost(){return S.rebTarget>0&&sIdx()<S.rebTarget&&mode!=='raid'}
+function best(){S.bestS=Math.max(S.bestS||0,S.maxS||0,S.rebTarget||0);return S.bestS}
+function boost(){return sIdx()<best()&&mode!=='raid'&&!S.farm}
 function updFree(){const b=document.querySelector('[data-act="free"]');if(!b)return;const C=COL[tab];const fl=timeLeft(C.free,C.cd);b.disabled=!!fl;b.textContent=fl?'무료 '+fl:'무료 뽑기'}
 function start(){resize();ST=stats();offline();daily();S.last=now();hudStage();hud();if(S.st.kills===0)toast('요요 출동! 복숭아·메론·참외 삑삑이 장착 완료');requestAnimationFrame(loop)}
 window.__yoyo={grade:()=>({PET_A,TV,SKINS,GSKINS,GM}),spend:()=>{for(const kind of ['guns','pets']){const C=COL[kind];while(S.gem>=C.cost*9&&C.list().length<=C.cap-10){draw(kind,10)}while(S.gem>=C.cost&&C.list().length<C.cap)draw(kind,1);autoMerge(kind);const L=C.list().slice().sort((a,b)=>kind==='guns'?toyDps(b)-toyDps(a):b.g-a.g);const E=C.eq();for(let i=0;i<3;i++)E[i]=L[i]?L[i].id:0}tab=null;$('#modal').hidden=true;ST=stats();return S.guns.map(g=>GR[g.g]).join('')},rebirth:()=>{doRebirth();const rc=rebCost;for(let i=0;i<999;i++){const ks=['atk','gold','spd'].map(k=>[k,rc(k,S.reb[k])]).sort((a,b)=>a[1]-b[1]);if(S.orb<ks[0][1])break;S.orb-=ks[0][1];S.reb[ks[0][0]]++}ST=stats();return S.reb},tick:(sec)=>{for(let i=0;i<sec*20;i++){update(.05);if(i%4===0){autoBuy();ST=stats()}}},get S(){return S},stats:()=>ST,set:o=>{Object.assign(S,o);ST=stats();hudStage()},bark};

@@ -754,7 +754,7 @@ let lt=performance.now(),hudT=0,saveT=0;
 function loop(n){const dt=Math.min(.05,(n-lt)/1e3);lt=n;
  if(!document.hidden){const fast=boost();update(dt);if(fast)update(dt);render();hudT+=dt;saveT+=dt;if(hudT>.2){hudT=0;if(!buffOn()&&S.buffEnd&&ST.dmg){}autoBuy();ST=stats();hud();if(tab&&COL[tab]&&COL[tab].free&&!sel)updFree()}if(saveT>10){saveT=0;save()}}
  requestAnimationFrame(loop)}
-function best(){S.bestS=Math.max(S.bestS||0,S.maxS||0,S.rebTarget||0);return S.bestS}
+function best(){S.bestS=Math.max(S.bestS||0,S.maxS||0,S.rebTarget||0,((S.mis&&S.mis.stage)||0)*10);return S.bestS}
 function boost(){return sIdx()<best()&&mode!=='raid'&&!S.farm}
 function updFree(){const b=document.querySelector('[data-act="free"]');if(!b)return;const C=COL[tab];const fl=timeLeft(C.free,C.cd);b.disabled=!!fl;b.textContent=fl?'무료 '+fl:'무료 뽑기'}
 function checkUpdate(){if(!/github\.io$/.test(location.hostname))return;try{fetch(location.pathname+'?vc='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(tx=>{const m=tx.match(/const VER='([^']+)'/);if(m&&m[1]!==VER&&!document.getElementById('updBar')){const d=document.createElement('button');d.id='updBar';d.textContent='새 버전이 나왔어요 · 눌러서 업데이트';d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 70px);z-index:50;background:#d4f03c;color:#2f3a07;border:3px solid #0f1628;border-radius:999px;padding:8px 16px;font-family:Jua,sans-serif;font-size:15px;box-shadow:0 3px 0 #0f1628';d.onclick=()=>{save();location.replace(location.pathname+'?v='+encodeURIComponent(m[1]))};document.body.appendChild(d)}}).catch(()=>{})}catch(e){}}

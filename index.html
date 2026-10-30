@@ -232,7 +232,7 @@ document.querySelectorAll('img[data-a]').forEach(e=>{e.src=src(e.dataset.a)});
 /* ---------- data ---------- */
 const GR=['D','C','B','A','S','SS','SSS','X','Z'];
 const GC=['#8d97a3','#45b45a','#3d8ee8','#9a5ef0','#f39a12','#ef4848','#ff4fae','#1fc6d9','#f7c21c'];
-const GM=[1,1.4,2.3,4.5,10.5,30,100,375,1500];
+const GM=[1,1.75,3.5,8,20,60,200,750,3000];
 // 16 squeaky toys. w = gacha weight
 const TOYS=[
  {k:'w_peach',n:'복숭아 삑삑이',rate:1.5,dmg:1,sp:560,w:10,d:'말랑한 기본 삑삑이'},
@@ -257,16 +257,16 @@ const PETS=[
  {k:'p_hedgehog',n:'고슴',a:'atk',b:'crit'},{k:'p_sprout',n:'새싹이',a:'gold',b:'crit'},
  {k:'p_duck',n:'꽥꽥',a:'atk',b:'critd'},{k:'p_frog',n:'개굴',a:'gold',b:'spd'},
  {k:'p_owl',n:'부엉',a:'atk',b:'critd'},{k:'p_dragon',n:'아기용',a:'atk',b:'spd',x:1.5}];
-const PET_A=[5,12,30,75,200,625,2000,7500,30000];
-const PET_B={spd:[.5,1,1.7,2.7,4,5.7,8,11,15],crit:[.25,.5,.75,1,1.5,2,2.5,3.2,4],critd:[2.5,6,11,20,32,55,95,160,275]};
+const PET_A=[10,25,60,150,400,1250,4000,15000,60000];
+const PET_B={spd:[1,2,3.5,5.5,8,11.5,16,22,30],crit:[.5,1,1.5,2,3,4,5,6.5,8],critd:[5,12,22,40,65,110,190,325,550]};
 const TREATS=[
  {k:'t_bone',n:'뼈다귀 비스킷',s:'atk'},{k:'t_jerky',n:'소고기 육포',s:'atk'},{k:'t_cookie',n:'발바닥 쿠키',s:'gold'},
  {k:'t_cheese',n:'치즈 큐브',s:'gold'},{k:'t_drum',n:'닭다리',s:'critd'},{k:'t_potato',n:'고구마 스틱',s:'spd'},
  {k:'t_toy',n:'말랑 개껌',s:'crit'},{k:'t_gold',n:'무지개 황금뼈',s:'atk',x:2.5}];
-const TV={atk:[1.2,3,7.5,18,50,150,500,1750,6250],gold:[1.5,3.7,8.5,22,60,175,600,2000,7500],critd:[2,5,10,20,37,70,130,237,450],spd:[.25,.5,.85,1.25,1.75,2.5,3.5,4.7,6.2],crit:[.12,.25,.37,.6,.9,1.25,1.75,2.25,3]};
+const TV={atk:[2.5,6,15,37,100,300,1000,3500,12500],gold:[3,7.5,17,45,120,350,1200,4000,15000],critd:[4,10,20,40,75,140,260,475,900],spd:[.5,1,1.7,2.5,3.5,5,7,9.5,12.5],crit:[.25,.5,.75,1.25,1.75,2.5,3.5,4.5,6]};
 const SN={atk:'공격력',gold:'골드',spd:'공격속도',crit:'치명타 확률',critd:'치명타 피해'};
-const SKINS=[{n:'기본 요요',cost:0,atk:0},{n:'군인 요요',cost:300,atk:12},{n:'캠핑 요요',cost:800,atk:37},{n:'왕관 요요',cost:2000,atk:100},{n:'천사 요요',cost:4500,atk:250},{n:'후리스 요요',cost:9000,atk:750}];
-const GSKINS=[{n:'기본 구름이',cost:0,gold:0,rain:0},{n:'무지개 구름이',cost:500,gold:12,rain:7},{n:'공주 구름이',cost:1500,gold:37,rain:20},{n:'꿀벌 구름이',cost:3000,gold:100,rain:50},{n:'겨울 구름이',cost:6000,gold:250,rain:125},{n:'천사 구름이',cost:12000,gold:750,rain:375}];
+const SKINS=[{n:'기본 요요',cost:0,atk:0},{n:'군인 요요',cost:300,atk:25},{n:'캠핑 요요',cost:800,atk:75},{n:'왕관 요요',cost:2000,atk:200},{n:'천사 요요',cost:4500,atk:500},{n:'후리스 요요',cost:9000,atk:1500}];
+const GSKINS=[{n:'기본 구름이',cost:0,gold:0,rain:0},{n:'무지개 구름이',cost:500,gold:25,rain:15},{n:'공주 구름이',cost:1500,gold:75,rain:40},{n:'꿀벌 구름이',cost:3000,gold:200,rain:100},{n:'겨울 구름이',cost:6000,gold:500,rain:250},{n:'천사 구름이',cost:12000,gold:1500,rain:750}];
 const gsBonus=()=>{let g=0,r=0;(S.gskins||[0]).forEach(i=>{g+=GSKINS[i].gold;r+=GSKINS[i].rain});return{g,r}};
 const THEMES=[{n:'공원',bg:'bg_park',c:'#9ed36a',e:['e_squirrel','e_pigeon','e_crate','e_crow']},
  {n:'눈밭',bg:'bg_snow',c:'#e6f0fa',e:['e_slime','e_crate','e_crow','e_spray']},
@@ -275,7 +275,7 @@ const BOSSES=[{k:'b_vacuum',n:'왕 로봇청소기'},{k:'b_cloud',n:'천둥 먹�
 const DRAW_W=[50,28,13,6,2.6,.4];
 
 /* ---------- save ---------- */
-const KEY='yoyoGunner.v2';const VER='2026.10.30-6';
+const KEY='yoyoGunner.v2';const VER='2026.10.30-7';
 function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  lv:{atk:0,spd:0,gold:0},reb:{atk:0,spd:0,gold:0},rebCount:0,
  guns:[{id:1,t:0,g:0},{id:2,t:1,g:0},{id:3,t:2,g:0}],gunEq:[1,2,3],pets:[{id:4,t:0,g:0}],petEq:[4,0,0],treats:[],skins:[0],skin:0,nid:5,
@@ -301,9 +301,9 @@ const eGold=s=>2.5*Math.pow(1.175,s);
 const UPC=l=>8*Math.pow(1.15,l);const COST={atk:UPC,spd:UPC,gold:UPC};
 const rebCost=(k,l)=>Math.ceil({atk:1,spd:2,gold:1}[k]*Math.pow(1.17,l)*(1+l*.08));
 const guCost=l=>Math.round(40+l*25+Math.pow(l,1.6)*4);
-const guGoldM=l=>Math.pow(1.03,l-1)*(1+.05*l);
-const guAtkM=l=>Math.pow(1.02,l-1)*(1+.025*(l-1));
-const guRain=l=>1.25*Math.pow(1.045,l-1)*(1+.075*l);
+const guGoldM=l=>Math.pow(1.06,l-1)*(1+.1*l);
+const guAtkM=l=>Math.pow(1.04,l-1)*(1+.05*(l-1));
+const guRain=l=>2.5*Math.pow(1.09,l-1)*(1+.15*l);
 const now=()=>Date.now();
 const buffOn=()=>now()<S.buffEnd;
 let fever=0;

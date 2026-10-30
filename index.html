@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#1d2740">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -272,7 +275,7 @@ const BOSSES=[{k:'b_vacuum',n:'왕 로봇청소기'},{k:'b_cloud',n:'천둥 먹�
 const DRAW_W=[50,28,13,6,2.6,.4];
 
 /* ---------- save ---------- */
-const KEY='yoyoGunner.v2';
+const KEY='yoyoGunner.v2';const VER='2026.10.30-5';
 function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  lv:{atk:0,spd:0,gold:0},reb:{atk:0,spd:0,gold:0},rebCount:0,
  guns:[{id:1,t:0,g:0},{id:2,t:1,g:0},{id:3,t:2,g:0}],gunEq:[1,2,3],pets:[{id:4,t:0,g:0}],petEq:[4,0,0],treats:[],skins:[0],skin:0,nid:5,
@@ -281,7 +284,7 @@ function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  st:{kills:0,draws:0,merges:0,ups:0},mis:{},
  used:[],rebTarget:0,bestS:0,slotLv:[0,0,0],stars:[0,0,0],gskins:[0],gskin:0,auto:false,sound:true,mul:1,last:Date.now(),gps:0}}
 let S;
-function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=Object.assign(fresh(),o);if(!S.pets.length){S.pets.push({id:S.nid++,t:0,g:0});S.petEq[0]=S.pets[0].id;S.dex.p0=1}return}}catch(e){}S=fresh()}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=Object.assign(fresh(),o);if(!o.starMig&&o.slotLv&&(!o.stars||o.stars.every(v=>!v))){S.stars=o.slotLv.map(L=>Math.min(20,Math.floor(L*Math.log2(1.0375))))}S.starMig=1;if(!S.pets.length){S.pets.push({id:S.nid++,t:0,g:0});S.petEq[0]=S.pets[0].id;S.dex.p0=1}return}}catch(e){}S=fresh()}
 function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const hot=window.claude&&window.claude.hot;
 if(hot&&hot.data&&hot.data.S)S=hot.data.S;else load();
@@ -673,7 +676,7 @@ function renderModal(){
   <p class="sub" style="margin-bottom:4px">저장 코드 · 다른 기기로 옮길 때 복사해서 붙여넣어요</p>
   <textarea id="saveOut" readonly></textarea><div class="bar"><button class="btn alt" data-act="copy">코드 복사</button></div>
   <textarea id="saveIn" placeholder="여기에 저장 코드를 붙여넣기"></textarea><div class="bar"><button class="btn" data-act="imp">불러오기</button><button class="btn red" data-act="reset">${confirmReset?'정말 초기화? 한 번 더':'처음부터'}</button></div>
-  <p class="sub">유료 결제·광고 없음. 다이아는 보스·미션·레이드·무료 뽑기·출석으로만 모아요. 그림은 힉스필드로 만들었어요.</p>`}
+  <p class="sub">유료 결제·광고 없음. 다이아는 보스·미션·레이드·무료 뽑기·출석으로만 모아요. 그림은 힉스필드로 만들었어요.</p><p class="sub">게임 버전 ${VER}</p>`}
  $('#sheetTitle').textContent=title;B.innerHTML=h;
  const so=$('#saveOut');if(so)try{so.value=btoa(unescape(encodeURIComponent(JSON.stringify(S))))}catch(e){}
 }
@@ -744,7 +747,7 @@ function offline(){const dt=Math.min(8*3600,(now()-(S.last||now()))/1e3);if(dt<=
  const sNow=sIdx(),nNow=12+Math.min(18,Math.floor(S.W*1.5));const rate=eGold(sNow)*ST.gold*nNow/Math.max(8,Math.min(35,eHP(sNow)*nNow/Math.max(dps,1e-9)+1.5));const lg=Math.min(S.gps||rate,rate)*budget*.6;gold+=lg;offGold=gold;S.gold+=lg;
  offFrom=st>s0?(Math.floor(s0/5)+1)+'-'+(s0%5+1):'';offTo=st>s0?S.W+'-'+S.sub:'';
  if(gold>0||offTo){resetWorld();openModal('offline')}}
-document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else{offline();daily();S.last=now()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else{offline();daily();S.last=now();checkUpdate()}});
 
 /* ---------- loop ---------- */
 let lt=performance.now(),hudT=0,saveT=0;
@@ -754,7 +757,8 @@ function loop(n){const dt=Math.min(.05,(n-lt)/1e3);lt=n;
 function best(){S.bestS=Math.max(S.bestS||0,S.maxS||0,S.rebTarget||0);return S.bestS}
 function boost(){return sIdx()<best()&&mode!=='raid'&&!S.farm}
 function updFree(){const b=document.querySelector('[data-act="free"]');if(!b)return;const C=COL[tab];const fl=timeLeft(C.free,C.cd);b.disabled=!!fl;b.textContent=fl?'무료 '+fl:'무료 뽑기'}
-function start(){resize();ST=stats();offline();daily();S.last=now();hudStage();hud();if(S.st.kills===0)toast('요요 출동! 복숭아·메론·참외 삑삑이 장착 완료');requestAnimationFrame(loop)}
+function checkUpdate(){if(!/github\.io$/.test(location.hostname))return;try{fetch(location.pathname+'?vc='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(tx=>{const m=tx.match(/const VER='([^']+)'/);if(m&&m[1]!==VER&&!document.getElementById('updBar')){const d=document.createElement('button');d.id='updBar';d.textContent='새 버전이 나왔어요 · 눌러서 업데이트';d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 70px);z-index:50;background:#d4f03c;color:#2f3a07;border:3px solid #0f1628;border-radius:999px;padding:8px 16px;font-family:Jua,sans-serif;font-size:15px;box-shadow:0 3px 0 #0f1628';d.onclick=()=>{save();location.replace(location.pathname+'?v='+encodeURIComponent(m[1]))};document.body.appendChild(d)}}).catch(()=>{})}catch(e){}}
+function start(){checkUpdate();setInterval(checkUpdate,5*60e3);resize();ST=stats();offline();daily();S.last=now();hudStage();hud();if(S.st.kills===0)toast('요요 출동! 복숭아·메론·참외 삑삑이 장착 완료');requestAnimationFrame(loop)}
 window.__yoyo={grade:()=>({PET_A,TV,SKINS,GSKINS,GM}),spend:()=>{for(const kind of ['guns','pets']){const C=COL[kind];while(S.gem>=C.cost*9&&C.list().length<=C.cap-10){draw(kind,10)}while(S.gem>=C.cost&&C.list().length<C.cap)draw(kind,1);autoMerge(kind);const L=C.list().slice().sort((a,b)=>kind==='guns'?toyDps(b)-toyDps(a):b.g-a.g);const E=C.eq();for(let i=0;i<3;i++)E[i]=L[i]?L[i].id:0}for(let k=0;k<200;k++){const st=SL();const i=[0,1,2].reduce((a,b)=>st[b]<st[a]?b:a);if(st[i]>=STAR_MAX||S.gem<STAR_COST[st[i]])break;starTry(i)}tab=null;$('#modal').hidden=true;ST=stats();return S.guns.map(g=>GR[g.g]).join('')+' ⭐'+SL().join('/')},rebirth:()=>{doRebirth();const rc=rebCost;for(let i=0;i<999;i++){const ks=['atk','gold','spd'].map(k=>[k,rc(k,S.reb[k])]).sort((a,b)=>a[1]-b[1]);if(S.orb<ks[0][1])break;S.orb-=ks[0][1];S.reb[ks[0][0]]++}ST=stats();return S.reb},tick:(sec)=>{for(let i=0;i<sec*20;i++){update(.05);if(i%4===0){autoBuy();ST=stats()}}},get S(){return S},stats:()=>ST,set:o=>{Object.assign(S,o);ST=stats();hudStage()},bark};
 if(hot&&hot.ready)hot.ready(start);else start();
 })();

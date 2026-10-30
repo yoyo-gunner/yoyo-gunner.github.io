@@ -171,7 +171,7 @@ textarea{width:100%;height:70px;border-radius:10px;border:2px solid #b9c5dc;font
       <div id="prog"><div id="progFill"></div></div>
     </div>
     <div id="curs">
-      <div class="row"><div class="cur num" title="골드"><img data-a="i_coin" alt=""><span id="cGold">0</span></div></div>
+      <div class="row"><div class="cur num" title="골드"><img data-a="i_coin" alt=""><span id="cGold">0</span><small id="cGps" style="font-size:10px;color:#7dff6a;margin-left:4px"></small></div></div>
       <div class="row"><div class="cur num" title="다이아"><img data-a="i_gem" alt=""><span id="cGem">0</span></div><div class="cur num" title="환생 구슬"><img data-a="i_orb" alt=""><span id="cOrb">0</span></div></div>
     </div>
   </header>
@@ -275,7 +275,7 @@ const BOSSES=[{k:'b_vacuum',n:'왕 로봇청소기'},{k:'b_cloud',n:'천둥 먹�
 const DRAW_W=[50,28,13,6,2.6,.4];
 
 /* ---------- save ---------- */
-const KEY='yoyoGunner.v2';const VER='2026.10.30-5';
+const KEY='yoyoGunner.v2';const VER='2026.10.30-6';
 function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  lv:{atk:0,spd:0,gold:0},reb:{atk:0,spd:0,gold:0},rebCount:0,
  guns:[{id:1,t:0,g:0},{id:2,t:1,g:0},{id:3,t:2,g:0}],gunEq:[1,2,3],pets:[{id:4,t:0,g:0}],petEq:[4,0,0],treats:[],skins:[0],skin:0,nid:5,
@@ -297,7 +297,7 @@ function fmt(n){if(!isFinite(n))return '∞';if(n<1000)return n<10&&n%1?n.toFixe
 /* ---------- formulas ---------- */
 const sIdx=()=> (S.W-1)*5+(S.sub-1);
 const eHP=s=>12*Math.pow(1.205,s)*(1+s*.04);
-const eGold=s=>1.7*Math.pow(1.165,s);
+const eGold=s=>2.5*Math.pow(1.175,s);
 const UPC=l=>8*Math.pow(1.15,l);const COST={atk:UPC,spd:UPC,gold:UPC};
 const rebCost=(k,l)=>Math.ceil({atk:1,spd:2,gold:1}[k]*Math.pow(1.17,l)*(1+l*.08));
 const guCost=l=>Math.round(40+l*25+Math.pow(l,1.6)*4);
@@ -418,7 +418,7 @@ cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();const x
 /* ---------- update ---------- */
 function update(dt){
  t+=dt;
- goldWinT+=dt;if(goldWinT>=5){const r=goldWin/goldWinT;S.gps=(S.gps>r*50?r:S.gps*.8+r*.2);goldWin=0;goldWinT=0}
+ goldWinT+=dt;if(goldWinT>=2){const r=goldWin/goldWinT;S.gps=(S.gps>r*50?r:S.gps*.8+r*.2);goldWin=0;goldWinT=0}
  if(fever>0){fever-=dt;if(fever<=0){fever=0;ST=stats()}}
  barkCD=Math.max(0,barkCD-dt);yRec=Math.max(0,yRec-dt*7);spinT=Math.max(0,spinT-dt);flashT=Math.max(0,flashT-dt);runF+=dt;barkT=Math.max(0,barkT-dt);happyT=Math.max(0,happyT-dt);guAnim=Math.max(0,guAnim-dt*2);
  if(mode==='walk'){walkT-=dt;bgY+=dt*90;if(walkT<=0)spawnWave()}
@@ -556,7 +556,7 @@ document.querySelectorAll('#mulSeg button').forEach(b=>b.addEventListener('click
 $('#autoBtn').addEventListener('click',()=>{S.auto=!S.auto;hud()});
 $('#bossBtn').addEventListener('click',()=>{S.farm=false;S.sub=5;foes=[];spawnWave();hudStage()});
 function hud(){
- $('#cGold').textContent=fmt(S.gold);$('#cGem').textContent=fmt(S.gem);$('#cOrb').textContent=fmt(S.orb);
+ $('#cGold').textContent=fmt(S.gold);{const gp=$('#cGps');if(gp)gp.textContent=S.gps>0?'+'+fmt(S.gps)+'/초':''}$('#cGem').textContent=fmt(S.gem);$('#cOrb').textContent=fmt(S.orb);
  $('#progFill').style.width=(mode==='boss'&&boss?(1-boss.hp/boss.max)*100:mode==='raid'?0:((S.sub-1)/5+(mode==='fight'?waveKilled/waveTotal/5:0))*100)+'%';
  const vals={atk:fmt(ST.dmg),spd:ST.spd.toFixed(2)+'x',gold:fmt(ST.gold*100)+'%'};
  document.querySelectorAll('.up').forEach(b=>{const k=b.dataset.u;const{c,n}=upCost(k);b.querySelector('.lv span').textContent=S.lv[k]+(n>1?' (+'+n+')':'');b.querySelector('.v').textContent=vals[k];b.querySelector('.c span').textContent=fmt(c);b.classList.toggle('no',S.gold<c)});

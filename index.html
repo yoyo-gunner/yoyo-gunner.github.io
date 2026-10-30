@@ -275,7 +275,7 @@ const BOSSES=[{k:'b_vacuum',n:'왕 로봇청소기'},{k:'b_cloud',n:'천둥 먹�
 const DRAW_W=[50,28,13,6,2.6,.4];
 
 /* ---------- save ---------- */
-const KEY='yoyoGunner.v2';const VER='2026.10.30-10';
+const KEY='yoyoGunner.v2';const VER='2026.10.30-11';
 function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  lv:{atk:0,spd:0,gold:0},reb:{atk:0,spd:0,gold:0},rebCount:0,
  guns:[{id:1,t:0,g:0},{id:2,t:1,g:0},{id:3,t:2,g:0}],gunEq:[1,2,3],pets:[{id:4,t:0,g:0}],petEq:[4,0,0],treats:[],skins:[0],skin:0,nid:5,
@@ -603,10 +603,13 @@ const COL={
   desc:i=>{const d=PETS[i.t];return `${SN[d.a]} x${Math.round(1+PET_A[i.g]*(d.x||1)/100).toLocaleString()}배 (장착 펫끼리 곱해짐) · ${SN[d.b]} +${PET_B[d.b][i.g]}%<br>장착하면 같이 싸워요`}},
  treats:{title:'간식 진열장',pre:'t',list:()=>S.treats,set:v=>S.treats=v,defs:TREATS,eq:null,cap:30,cost:200,free:'freeTreat',cd:10*60e3,
   desc:i=>{const d=TREATS[i.t];return `보유만 해도 ${SN[d.s]} +${fmt(TV[d.s][i.g]*(d.x||1))}%`}}};
+const CAPMAX=200;function capOf(C){return C.cap+((S.capX||{})[C.pre]||0)}
+function capCost(C){return 300+200*(((S.capX||{})[C.pre]||0)/10)}
+function expand(kind){const C=COL[kind];if(capOf(C)>=CAPMAX){toast('창고가 최대 크기예요');return}const c=capCost(C);if(S.gem<c){toast('다이아가 부족해요');return}S.gem-=c;S.capX=S.capX||{};S.capX[C.pre]=(S.capX[C.pre]||0)+10;sfx('win');save();toast('창고 확장! '+capOf(C)+'칸');renderModal();hud()}
 function pickType(defs){if(!defs[0].w)return Math.floor(Math.random()*defs.length);const tot=defs.reduce((a,d)=>a+d.w,0);let r=Math.random()*tot;for(let i=0;i<defs.length;i++){if(r<defs[i].w)return i;r-=defs[i].w}return 0}
 function draw(kind,n,free){
  const C=COL[kind],L=C.list();
- if(L.length+n>C.cap){toast('보관함이 가득 찼어요. 합성해서 자리를 만드세요');return}
+ if(L.length+n>capOf(C)){toast('보관함이 가득 찼어요. 합성하거나 아래 창고 확장으로 칸을 늘려요');return}
  if(!free){const c=n===10?C.cost*9:C.cost;if(S.gem<c){toast('다이아가 부족해요 · 보스·미션·레이드로 모아요');return}S.gem-=c}
  else S[C.free]=now();
  reveal=[];let newDex=0;
@@ -637,12 +640,12 @@ function renderCol(kind){
  if(reveal){h+=`<div class="sub" style="text-align:center;margin:0">획득!</div><div class="reveal">`+reveal.map((it,j)=>`<div class="cell" style="${cellBg(it.g)};animation-delay:${j*.06}s">${cellHTML(C.defs[it.t].k,it.g)}</div>`).join('')+`</div>`}
  if(sel){const it=L.find(x=>x.id===sel);if(it){const d=C.defs[it.t];const eqd=E&&E.includes(it.id);
   h+=`<div class="detail"><img src="${src(d.k)}" alt=""><div style="flex:1;min-width:0"><div class="dn"><span class="pill" style="background:${GC[it.g]}">${GR[it.g]}</span>${d.n}</div><div class="ds">${C.desc(it)}<br><b>${it.g>=8?'최고 등급이에요':'같은 등급을 하나 더 누르면 합성 → '+GR[it.g+1]}</b></div></div>${E?`<button class="btn ${eqd?'alt':''}" style="flex:0 0 auto" data-act="eq">${eqd?'해제':'장착'}</button>`:''}</div>`}}
- else h+=`<p class="sub">칸을 눌러 고르고, 같은 등급끼리 연달아 누르면 합성돼요. (${L.length}/${C.cap})</p>`;
+ else h+=`<p class="sub">칸을 눌러 고르고, 같은 등급끼리 연달아 누르면 합성돼요. (${L.length}/${capOf(C)})</p>`;
  const sorted=L.slice().sort((a,b)=>b.g-a.g||a.t-b.t);const sg=sel&&(L.find(x=>x.id===sel)||{}).g;
  h+=`<div class="grid">`+sorted.map(it=>`<button class="cell${it.id===sel?' sel':''}${sel&&it.id!==sel&&it.g===sg&&sg<8?' mt':''}" style="${cellBg(it.g)}" data-id="${it.id}" aria-label="${GR[it.g]} ${C.defs[it.t].n}">${cellHTML(C.defs[it.t].k,it.g,E&&E.includes(it.id)?'<span class="eq">장착</span>':'')}</button>`).join('')+
   Array(Math.max(0,(5-sorted.length%5)%5+(sorted.length<10?5:0))).fill('<div class="cell empty"></div>').join('')+`</div>`;
  const fl=C.free?timeLeft(C.free,C.cd):null;
- h+=`<div class="bar">${C.free?`<button class="btn blue" data-act="free" ${fl?'disabled':''}>${fl?'무료 '+fl:'무료 뽑기'}</button>`:''}<button class="btn" data-act="d1"><img src="${src('i_gem')}" alt="">${C.cost} · 1회</button><button class="btn" data-act="d10"><img src="${src('i_gem')}" alt="">${C.cost*9} · 10회</button></div><div class="bar" style="margin-top:0"><button class="btn alt" data-act="am">자동 합성</button></div>`;
+ h+=`<div class="bar">${C.free?`<button class="btn blue" data-act="free" ${fl?'disabled':''}>${fl?'무료 '+fl:'무료 뽑기'}</button>`:''}<button class="btn" data-act="d1"><img src="${src('i_gem')}" alt="">${C.cost} · 1회</button><button class="btn" data-act="d10"><img src="${src('i_gem')}" alt="">${C.cost*9} · 10회</button></div><div class="bar" style="margin-top:0"><button class="btn alt" data-act="am">자동 합성</button>${capOf(C)<CAPMAX?`<button class="btn blue" data-act="cx"><img src="${src('i_gem')}" alt="">${capCost(C).toLocaleString()} · 창고 +10칸</button>`:`<button class="btn alt" disabled>창고 최대 ${CAPMAX}칸</button>`}</div>`;
  return h}
 function renderModal(){
  if(!tab)return;const B=$('#sheetBody');let h='',title='';
@@ -687,7 +690,7 @@ $('#sheetBody').addEventListener('click',e=>{
   sel=sel===id?null:id;renderModal();return}
  let act=b.dataset.act;
  if(act==='eq'&&C){equip(tab,C.list().find(x=>x.id===sel));return}
- if(act==='d1')return draw(tab,1);if(act==='d10')return draw(tab,10);if(act==='free')return draw(tab,1,true);if(act==='am')return autoMerge(tab);
+ if(act==='d1')return draw(tab,1);if(act==='d10')return draw(tab,10);if(act==='free')return draw(tab,1,true);if(act==='am')return autoMerge(tab);if(act==='cx')return expand(tab);
  if(act==='gu'){const c=guCost(S.gu);if(S.gem<c)return;S.gem-=c;S.gu++;ST=stats();guAnim=1;sfx('win');toast('구름이 Lv.'+S.gu+'!');renderModal();return}
  if(act==='closeOff'){closeModal();return}
  if(act==='rebOpen'){openModal('rebirth');return}
@@ -759,7 +762,7 @@ function boost(){return sIdx()<best()&&mode!=='raid'&&!S.farm}
 function updFree(){const b=document.querySelector('[data-act="free"]');if(!b)return;const C=COL[tab];const fl=timeLeft(C.free,C.cd);b.disabled=!!fl;b.textContent=fl?'무료 '+fl:'무료 뽑기'}
 function checkUpdate(){if(!/github\.io$/.test(location.hostname))return;try{fetch(location.pathname+'?vc='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(tx=>{const m=tx.match(/const VER='([^']+)'/);if(m&&m[1]!==VER&&!document.getElementById('updBar')){const d=document.createElement('button');d.id='updBar';d.textContent='새 버전이 나왔어요 · 눌러서 업데이트';d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 70px);z-index:50;background:#d4f03c;color:#2f3a07;border:3px solid #0f1628;border-radius:999px;padding:8px 16px;font-family:Jua,sans-serif;font-size:15px;box-shadow:0 3px 0 #0f1628';d.onclick=()=>{save();location.replace(location.pathname+'?v='+encodeURIComponent(m[1]))};document.body.appendChild(d)}}).catch(()=>{})}catch(e){}}
 function start(){checkUpdate();setInterval(checkUpdate,5*60e3);resize();ST=stats();offline();daily();S.last=now();hudStage();hud();if(S.st.kills===0)toast('요요 출동! 복숭아·메론·참외 삑삑이 장착 완료');requestAnimationFrame(loop)}
-window.__yoyo={grade:()=>({PET_A,TV,SKINS,GSKINS,GM}),spend:()=>{for(const kind of ['guns','pets']){const C=COL[kind];while(S.gem>=C.cost*9&&C.list().length<=C.cap-10){draw(kind,10)}while(S.gem>=C.cost&&C.list().length<C.cap)draw(kind,1);autoMerge(kind);const L=C.list().slice().sort((a,b)=>kind==='guns'?toyDps(b)-toyDps(a):b.g-a.g);const E=C.eq();for(let i=0;i<3;i++)E[i]=L[i]?L[i].id:0}for(let k=0;k<200;k++){const st=SL();const i=[0,1,2].reduce((a,b)=>st[b]<st[a]?b:a);if(st[i]>=STAR_MAX||S.gem<STAR_COST[st[i]])break;starTry(i)}tab=null;$('#modal').hidden=true;ST=stats();return S.guns.map(g=>GR[g.g]).join('')+' ⭐'+SL().join('/')},rebirth:()=>{doRebirth();const rc=rebCost;for(let i=0;i<999;i++){const ks=['atk','gold','spd'].map(k=>[k,rc(k,S.reb[k])]).sort((a,b)=>a[1]-b[1]);if(S.orb<ks[0][1])break;S.orb-=ks[0][1];S.reb[ks[0][0]]++}ST=stats();return S.reb},tick:(sec)=>{for(let i=0;i<sec*20;i++){update(.05);if(i%4===0){autoBuy();ST=stats()}}},get S(){return S},stats:()=>ST,set:o=>{Object.assign(S,o);ST=stats();hudStage()},bark};
+window.__yoyo={grade:()=>({PET_A,TV,SKINS,GSKINS,GM}),spend:()=>{for(const kind of ['guns','pets']){const C=COL[kind];while(S.gem>=C.cost*9&&C.list().length<=capOf(C)-10){draw(kind,10)}while(S.gem>=C.cost&&C.list().length<capOf(C))draw(kind,1);autoMerge(kind);const L=C.list().slice().sort((a,b)=>kind==='guns'?toyDps(b)-toyDps(a):b.g-a.g);const E=C.eq();for(let i=0;i<3;i++)E[i]=L[i]?L[i].id:0}for(let k=0;k<200;k++){const st=SL();const i=[0,1,2].reduce((a,b)=>st[b]<st[a]?b:a);if(st[i]>=STAR_MAX||S.gem<STAR_COST[st[i]])break;starTry(i)}tab=null;$('#modal').hidden=true;ST=stats();return S.guns.map(g=>GR[g.g]).join('')+' ⭐'+SL().join('/')},rebirth:()=>{doRebirth();const rc=rebCost;for(let i=0;i<999;i++){const ks=['atk','gold','spd'].map(k=>[k,rc(k,S.reb[k])]).sort((a,b)=>a[1]-b[1]);if(S.orb<ks[0][1])break;S.orb-=ks[0][1];S.reb[ks[0][0]]++}ST=stats();return S.reb},tick:(sec)=>{for(let i=0;i<sec*20;i++){update(.05);if(i%4===0){autoBuy();ST=stats()}}},get S(){return S},stats:()=>ST,set:o=>{Object.assign(S,o);ST=stats();hudStage()},bark};
 if(hot&&hot.ready)hot.ready(start);else start();
 })();
 </script>

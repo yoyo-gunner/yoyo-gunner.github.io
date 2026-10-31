@@ -275,7 +275,7 @@ const BOSSES=[{k:'b_vacuum',n:'왕 로봇청소기'},{k:'b_cloud',n:'천둥 먹�
 const DRAW_W=[50,28,13,6,2.6,.4];
 
 /* ---------- save ---------- */
-const KEY='yoyoGunner.v2';const VER='2026.10.30-12';
+const KEY='yoyoGunner.v2';const VER='2026.10.31-1';
 function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  lv:{atk:0,spd:0,gold:0},reb:{atk:0,spd:0,gold:0},rebCount:0,
  guns:[{id:1,t:0,g:0},{id:2,t:1,g:0},{id:3,t:2,g:0}],gunEq:[1,2,3],pets:[{id:4,t:0,g:0}],petEq:[4,0,0],treats:[],skins:[0],skin:0,nid:5,
@@ -318,9 +318,9 @@ function stats(){
  const R=S.reb,L=S.lv;
  const base=4*(1+.1*L.atk)*Math.pow(1.06,L.atk);
  const bf=buffOn()?2:1,fv=fever>0;
- const dmg=base*guAtkM(S.gu)*pA*(1+tA/100)*(1+sk/100)*(1+D.atk/100)*(1+.3*R.atk)*Math.pow(1.1,R.atk)*bf;
- const spd=(1+.03*L.spd)*(1+sp/100)*(1+.025*R.spd)*(fv?2:1);
- const gold=(1+.1*L.gold)*Math.pow(1.015,L.gold)*pG*(1+tG/100)*guGoldM(S.gu)*(1+gsb.g/100)*(1+D.gold/100)*(1+.35*R.gold)*Math.pow(1.06,R.gold)*bf*(fv?3:1);
+ const dmg=base*guAtkM(S.gu)*pA*(1+tA/100)*(1+sk/100)*(1+D.atk/100)*(1+.5*R.atk)*Math.pow(1.2,R.atk)*bf;
+ const spd=(1+.03*L.spd)*(1+sp/100)*(1+.05*R.spd)*(fv?2:1);
+ const gold=(1+.1*L.gold)*Math.pow(1.015,L.gold)*pG*(1+tG/100)*guGoldM(S.gu)*(1+gsb.g/100)*(1+D.gold/100)*(1+.5*R.gold)*Math.pow(1.12,R.gold)*bf*(fv?3:1);
  const ap=(pA*(1+tA/100)*(1+sk/100)*(1+D.atk/100)-1)*100,gp=(pG*(1+tG/100)-1)*100;
  return{dmg,spd,gold,crit:Math.min(cr,100),critd:cd,ap,gp,sp}
 }
@@ -664,7 +664,7 @@ function renderModal(){
   <div class="bar"><button class="btn pur" data-act="reb" ${g>0?'':'disabled'}>${confirmReb?'정말 환생할까요? 한 번 더 누르기':'환생하기'}</button></div>
   <div class="bar" style="margin-top:0"><button class="btn pur" data-act="rebAll" ${S.orb>=1?'':'disabled'}><img src="${src('i_orb')}" alt="">구슬 한 번에 쓰기 (골고루)</button></div>
   <p class="sub" style="margin:0 0 8px">강화 버튼을 꾹 누르고 있으면 연속으로 올라가요.</p>
-  <div class="list">`+[['atk','영구 공격력','i_atk',l=>'+'+fmt(((1+.3*l)*Math.pow(1.1,l)-1)*100)+'%'],['spd','영구 공격속도','i_spd',l=>'+'+(l*2.5).toFixed(1)+'%'],['gold','영구 골드','i_gold',l=>'+'+fmt(((1+.35*l)*Math.pow(1.06,l)-1)*100)+'%']].map(([k,n,ic,f])=>{const c=rebCost(k,S.reb[k]);return`<div class="li"><img src="${src(ic)}" alt=""><div class="m"><b>${n} Lv.${S.reb[k]}</b><span>${f(S.reb[k])} → ${f(S.reb[k]+1)}</span></div><div style="display:flex;gap:5px;flex:0 0 auto"><button class="btn pur" data-reb="${k}" ${S.orb>=c?'':'disabled'} style="touch-action:none"><img src="${src('i_orb')}" alt="">${fmt(c)}</button><button class="btn pur" data-rebmax="${k}" ${S.orb>=c?'':'disabled'}>MAX</button></div></div>`}).join('')+`</div>`}
+  <div class="list">`+[['atk','영구 공격력','i_atk',l=>'+'+fmt(((1+.5*l)*Math.pow(1.2,l)-1)*100)+'%'],['spd','영구 공격속도','i_spd',l=>'+'+(l*5).toFixed(0)+'%'],['gold','영구 골드','i_gold',l=>'+'+fmt(((1+.5*l)*Math.pow(1.12,l)-1)*100)+'%']].map(([k,n,ic,f])=>{const c=rebCost(k,S.reb[k]);return`<div class="li"><img src="${src(ic)}" alt=""><div class="m"><b>${n} Lv.${S.reb[k]}</b><span>${f(S.reb[k])} → ${f(S.reb[k]+1)}</span></div><div style="display:flex;gap:5px;flex:0 0 auto"><button class="btn pur" data-reb="${k}" ${S.orb>=c?'':'disabled'} style="touch-action:none"><img src="${src('i_orb')}" alt="">${fmt(c)}</button><button class="btn pur" data-rebmax="${k}" ${S.orb>=c?'':'disabled'}>MAX</button></div></div>`}).join('')+`</div>`}
  else if(tab==='raid'){title='레이드 보스';const L=S.raidLv;const busy=mode==='boss'||mode==='raid';
   h=`<p class="sub">횟수 제한 없이 언제든 도전할 수 있어요. 30초 안에 처치하면 다이아를 크게 받고 레벨이 올라가요. 못 잡아도 준 피해만큼 다이아를 받아요.</p>
   <div class="detail"><img src="${src(BOSSES[(L+1)%4].k)}" alt=""><div style="flex:1"><div class="dn">레이드 Lv.${L} · ${BOSSES[(L+1)%4].n}</div><div class="ds">체력 ${fmt(eHP(8+L*5)*45)}<br>승리 보상 💎 ${30+L*10} · 도전 무제한</div></div></div>

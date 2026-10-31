@@ -275,7 +275,7 @@ const BOSSES=[{k:'b_vacuum',n:'왕 로봇청소기'},{k:'b_cloud',n:'천둥 먹�
 const DRAW_W=[50,28,13,6,2.6,.4];
 
 /* ---------- save ---------- */
-const KEY='yoyoGunner.v2';const VER='2026.10.31-1';
+const KEY='yoyoGunner.v2';const VER='2026.10.31-2';
 function fresh(){return{v:2,gold:0,gem:300,orb:0,W:1,sub:1,maxS:0,farm:false,
  lv:{atk:0,spd:0,gold:0},reb:{atk:0,spd:0,gold:0},rebCount:0,
  guns:[{id:1,t:0,g:0},{id:2,t:1,g:0},{id:3,t:2,g:0}],gunEq:[1,2,3],pets:[{id:4,t:0,g:0}],petEq:[4,0,0],treats:[],skins:[0],skin:0,nid:5,
@@ -299,7 +299,7 @@ const sIdx=()=> (S.W-1)*5+(S.sub-1);
 const eHP=s=>12*Math.pow(1.205,s)*(1+s*.04);
 const eGold=s=>2.5*Math.pow(1.175,s);
 const UPC=l=>8*Math.pow(1.15,l);const COST={atk:UPC,spd:UPC,gold:UPC};
-const rebCost=(k,l)=>Math.ceil({atk:1,spd:2,gold:1}[k]*Math.pow(1.17,l)*(1+l*.08));
+const rebCost=(k,l)=>Math.ceil({atk:1,spd:2,gold:1}[k]*Math.pow(1.15,l)*(1+l*.08));
 const guCost=l=>Math.round(40+l*25+Math.pow(l,1.6)*4);
 const guGoldM=l=>Math.pow(1.12,l-1)*(1+.2*l);
 const guAtkM=l=>Math.pow(1.08,l-1)*(1+.1*(l-1));
@@ -721,7 +721,7 @@ function holdStep(d){if(!holdK)return;if(rebBuy(holdK)){sfx('up');renderModal();
 document.getElementById('sheetBody').addEventListener('pointerdown',e=>{const b=e.target.closest('[data-reb]');if(!b||b.disabled)return;e.preventDefault();holdK=b.dataset.reb;if(rebBuy(holdK)){sfx('up');renderModal();holdT=setTimeout(()=>holdStep(160),380)}else holdStop()});
 ['pointerup','pointercancel','blur'].forEach(ev=>window.addEventListener(ev,holdStop));
 
-function rebGain(){const s=S.maxS;if(s<15)return 0;return Math.floor(Math.pow(s-12,2.1)*(1+S.rebCount*.25)*3)}
+function rebGain(){const s=S.maxS;if(s<15)return 0;return Math.floor(Math.pow(s-12,2.1)*(1+S.rebCount*.3)*10)}
 let lastReb=0;function doRebirth(){const g=rebGain();if(g<=0)return;best();S.gps=0;S.rebTarget=S.bestS;lastReb=g;S.orb+=g;S.rebCount++;S.gold=0;S.W=1;S.sub=1;S.maxS=0;S.farm=false;S.lv={atk:0,spd:0,gold:0};ST=stats();resetWorld();save();openModal('rebDone');happyT=1.5;sfx('win')}
 function resetWorld(){foes=[];buls=[];boss=null;raid=null;mode='walk';walkT=1;hudStage()}
 
